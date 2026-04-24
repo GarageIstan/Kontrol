@@ -741,6 +741,7 @@ function renderRecords(records) {
         </div>
         <div class="list-actions">
           <button onclick="openDetail('${r.ID}')">Detay Aç</button>
+          <button style="background:#dc2626;" onclick="deleteRecord('${r.ID}')">Sil</button>
         </div>
       </div>
     `;
@@ -1071,6 +1072,32 @@ async function uploadSignature(checklistId, canvasId, name) {
   const path = `${checklistId}/${name}.png`;
   const uploaded = await uploadOneFile(SIGNATURE_BUCKET, path, blob);
   return uploaded.url;
+}
+  async function deleteRecord(id) {
+  const ok = confirm("Bu kaydı silmek istediğine emin misin?");
+  if (!ok) return;
+
+  try {
+    const res = await fetch(API_URL, {
+      method: "POST",
+      body: JSON.stringify({
+        action: "deleteChecklistRecord",
+        id
+      })
+    });
+
+    const data = await res.json();
+
+    if (!data.ok) {
+      throw new Error(data.error || "Silme başarısız");
+    }
+
+    alert("Kayıt silindi ✅");
+    await loadTodayRecords();
+
+  } catch (e) {
+    alert("Silme hatası: " + e.message);
+  }
 }
 
 init();
