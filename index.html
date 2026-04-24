@@ -1389,25 +1389,140 @@ async function uploadSignature(checklistId, canvasId, name) {
 function printDetail() {
   const content = document.getElementById("detailContent").innerHTML;
 
-  let oldPrintArea = document.getElementById("printArea");
-  if (oldPrintArea) oldPrintArea.remove();
+  const printWindow = window.open("", "_blank");
 
-  const div = document.createElement("div");
-  div.id = "printArea";
-  div.innerHTML = content;
+  if (!printWindow) {
+    alert("Pop-up engellendi. Tarayıcıdan izin verip tekrar dene.");
+    return;
+  }
 
-  document.body.appendChild(div);
+  printWindow.document.open();
+  printWindow.document.write(`
+    <!DOCTYPE html>
+    <html lang="tr">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Montaj Kontrol Fişi</title>
 
-  // Mobilde görsellerin ve HTML'in oturması için bekletiyoruz
-  setTimeout(() => {
-    window.print();
+      <style>
+        * {
+          box-sizing: border-box;
+        }
 
-    // Mobil print penceresi geç açıldığı için hemen silmiyoruz
-    setTimeout(() => {
-      const printArea = document.getElementById("printArea");
-      if (printArea) printArea.remove();
-    }, 3000);
-  }, 800);
+        body {
+          margin: 0;
+          padding: 5mm;
+          font-family: Arial, sans-serif;
+          color: #000;
+          background: #fff;
+          font-size: 9px;
+          line-height: 1.25;
+        }
+
+        .detail-section {
+          border: 1px solid #333;
+          border-radius: 6px;
+          padding: 5px;
+          margin-bottom: 5px;
+          break-inside: avoid;
+        }
+
+        h4 {
+          margin: 3px 0 5px;
+          font-size: 11px;
+        }
+
+        .list-meta {
+          font-size: 9px;
+          color: #000;
+          line-height: 1.3;
+        }
+
+        .detail-item {
+          border-bottom: 1px solid #ddd;
+          padding: 2px 0;
+          font-size: 8px;
+        }
+
+        .detail-item:last-child {
+          border-bottom: none;
+        }
+
+        .detail-grid {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 4px;
+        }
+
+        .detail-img {
+          width: 100%;
+          max-height: 50px;
+          object-fit: cover;
+          border: 1px solid #333;
+          border-radius: 4px;
+        }
+
+        .sign-row {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 6px;
+        }
+
+        .sign-box {
+          text-align: center;
+        }
+
+        .sign-box b {
+          display: block;
+          font-size: 9px;
+          margin-bottom: 3px;
+        }
+
+        .sign-box .detail-img {
+          max-height: 65px;
+          object-fit: contain;
+        }
+
+        button {
+          display: none !important;
+        }
+
+        @page {
+          size: A5 portrait;
+          margin: 5mm;
+        }
+      </style>
+    </head>
+
+    <body>
+      ${content}
+
+      <script>
+        function waitImages() {
+          const imgs = Array.from(document.images);
+          if (!imgs.length) return Promise.resolve();
+
+          return Promise.all(imgs.map(img => {
+            if (img.complete) return Promise.resolve();
+            return new Promise(resolve => {
+              img.onload = resolve;
+              img.onerror = resolve;
+            });
+          }));
+        }
+
+        waitImages().then(() => {
+          setTimeout(() => {
+            window.print();
+          }, 500);
+        });
+      <\/script>
+    </body>
+    </html>
+  `);
+
+  printWindow.document.close();
 }
 async function deleteTestRecords() {
   const ok = confirm("Tüm TEST kayıtları ve bağlı Supabase dosyaları silinecek. Emin misin?");
