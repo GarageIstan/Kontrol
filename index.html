@@ -336,6 +336,22 @@ button {
   padding: 12px;
   margin-top: 12px;
 }
+
+.sign-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.sign-box {
+  text-align: center;
+}
+
+.sign-img {
+  max-height: 130px;
+  object-fit: contain;
+}
+
   @media print {
   body * {
     visibility: hidden;
@@ -963,45 +979,39 @@ function renderDetail(r) {
     const answerClass = x.answer === "Evet" ? "answer-evet" : (x.answer === "Hayır" ? "answer-hayir" : "");
     return `
       <div class="detail-item">
-  <b>${i + 1}. ${x.label || x.item || "-"}</b>
-  — <span class="${answerClass}">${x.answer || "-"}</span>
-  ${x.note ? " | " + x.note : ""}
-</div>
+        <b>${i + 1}. ${x.label || x.item || "-"}</b>
+        — <span class="${answerClass}">${x.answer || "-"}</span>
+        ${x.note ? " | " + x.note : ""}
+      </div>
     `;
   }).join("");
 
   const beforeHtml = beforePhotos.length
-    ? beforePhotos.map(url => `<img class="detail-img" src="${url}" loading="lazy" onclick="openImage(\'${url}\')">`).join("")
+    ? beforePhotos.map(url => `<img class="detail-img" src="${url}" loading="lazy" onclick="openImage('${url}')">`).join("")
     : '<div class="list-meta">Öncesi fotoğraf yok.</div>';
 
   const afterHtml = afterPhotos.length
-    ? afterPhotos.map(url => `<img class="detail-img" src="${url}" loading="lazy" onclick="openImage(\'${url}\')">`).join("")
+    ? afterPhotos.map(url => `<img class="detail-img" src="${url}" loading="lazy" onclick="openImage('${url}')">`).join("")
     : '<div class="list-meta">Sonrası fotoğraf yok.</div>';
 
   const techSign = r.UstaImzaPath
-    ? `<img class="detail-img" src="${r.UstaImzaPath}" loading="lazy" onclick="openImage(\'${r.UstaImzaPath}\')">`
+    ? `<img class="detail-img sign-img" src="${r.UstaImzaPath}" loading="lazy" onclick="openImage('${r.UstaImzaPath}')">`
     : '<div class="list-meta">Usta imzası yok.</div>';
 
   const controllerSign = r.KontrolImzaPath
-    ? `<img class="detail-img" src="${r.KontrolImzaPath}" loading="lazy" onclick="openImage(\'${r.KontrolImzaPath}\')">`
+    ? `<img class="detail-img sign-img" src="${r.KontrolImzaPath}" loading="lazy" onclick="openImage('${r.KontrolImzaPath}')">`
     : '<div class="list-meta">Kontrol eden imzası yok.</div>';
 
   content.innerHTML = `
- <div class="detail-section">
-  <h4>İmzalar</h4>
-
-  <div class="sign-row">
-    <div class="sign-box">
-      <b>Montaj Ustası</b>
-      ${techSign}
-    </div>
-
-    <div class="sign-box">
-      <b>Kontrol Eden</b>
-      ${controllerSign}
-    </div>
-  </div>
-</div>
+    <div class="detail-section">
+      <b>${shortText(r.Plaka)} - ${shortText(r.AracModel)}</b>
+      <div class="list-meta">
+        ID: ${shortText(r.ID)}<br>
+        Tarih: ${formatDateTR(r.TarihSaat)}<br>
+        Müşteri: ${shortText(r.MusteriAdi)}<br>
+        İş Emri: ${shortText(r.IsEmriNo)}<br>
+        Montaj Ustası: ${shortText(r.MontajUstasi)}
+      </div>
     </div>
 
     <div class="detail-section">
@@ -1019,13 +1029,19 @@ function renderDetail(r) {
       <div class="detail-grid">${afterHtml}</div>
     </div>
 
-    <div class="detail-section">
+    <div class="detail-section signature-print-section">
       <h4>İmzalar</h4>
-      <b>Montaj Ustası</b>
-      ${techSign}
-      <br><br>
-      <b>Kontrol Eden</b>
-      ${controllerSign}
+      <div class="sign-row">
+        <div class="sign-box">
+          <b>Montaj Ustası</b>
+          ${techSign}
+        </div>
+
+        <div class="sign-box">
+          <b>Kontrol Eden</b>
+          ${controllerSign}
+        </div>
+      </div>
     </div>
 
     <button onclick="printDetail()" style="margin-top:10px;background:#22c55e;color:#052e16;width:100%;">Fiş Al</button>
