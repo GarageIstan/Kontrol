@@ -491,6 +491,7 @@ button {
     </div>
 
     <button style="background:#334155;color:white;margin-top:8px;" onclick="loadTodayRecords()">Bugünkü Kayıtları Getir</button>
+    <button style="background:#b91c1c;color:white;margin-top:8px;" onclick="deleteTestRecords()">TEST Kayıtlarını Temizle</button>
 
     <div id="recordsList" style="margin-top:12px;"></div>
   </div>
@@ -538,7 +539,11 @@ const items = [
 const state = {
   answers: {},
   beforePhotos: [],
-  afterPhotos: []
+  afterPhotos: [],
+  existingBeforePhotoPaths: [],
+  existingAfterPhotoPaths: [],
+  existingTechnicianSignaturePath: "",
+  existingControllerSignaturePath: ""
 };
 
 let saving = false;
@@ -667,16 +672,23 @@ if (boslar > 0) {
 
     saveBtn.textContent = "Kaydediliyor...";
     saveStatus.textContent = "Kayıt Sheets'e gönderiliyor...";
-const tempId = "CHK-" + Date.now();
+const recordId = editMode ? editingId : "CHK-" + Date.now();
 
 saveBtn.textContent = "Fotoğraflar yükleniyor...";
 saveStatus.textContent = "Supabase Storage'a fotoğraf ve imzalar yükleniyor...";
 
-const beforePhotoPaths = await uploadPhotoGroup(tempId, "before", state.beforePhotos);
-const afterPhotoPaths = await uploadPhotoGroup(tempId, "after", state.afterPhotos);
+const newBeforePhotoPaths = await uploadPhotoGroup(recordId, "before", state.beforePhotos);
+const newAfterPhotoPaths = await uploadPhotoGroup(recordId, "after", state.afterPhotos);
 
-const technicianSignaturePath = await uploadSignature(tempId, "techSignature", "technician");
-const controllerSignaturePath = await uploadSignature(tempId, "controllerSignature", "controller");
+const beforePhotoPaths = [...state.existingBeforePhotoPaths, ...newBeforePhotoPaths];
+const afterPhotoPaths = [...state.existingAfterPhotoPaths, ...newAfterPhotoPaths];
+
+let technicianSignaturePath = await uploadSignature(recordId, "techSignature", "technician");
+let controllerSignaturePath = await uploadSignature(recordId, "controllerSignature", "controller");
+
+if (!technicianSignaturePath && editMode) technicianSignaturePath = state.existingTechnicianSignaturePath || "";
+if (!controllerSignaturePath && editMode) controllerSignaturePath = state.existingControllerSignaturePath || "";
+
     const payload = {
       IsEmriNo: document.getElementById("workOrder").value.trim(),
       plate: plate,
@@ -684,7 +696,7 @@ const controllerSignaturePath = await uploadSignature(tempId, "controllerSignatu
       vehicleModel: document.getElementById("brandModel").value.trim(),
       technicianName: document.getElementById("technicianName").value.trim(),
       checklist: getChecklist(),
-      id: editMode ? editingId : tempId,
+      id: recordId,
 beforePhotoCount: beforePhotoPaths.length,
 afterPhotoCount: afterPhotoPaths.length,
 beforePhotoPaths: beforePhotoPaths,
@@ -697,7 +709,7 @@ controllerSignaturePath: controllerSignaturePath,
     const res = await fetch(API_URL, {
       method: "POST",
       body: JSON.stringify({
-        action: "addChecklistRecord",
+        action: editMode ? "updateChecklistRecord" : "addChecklistRecord",
         payload
       })
     });
@@ -772,6 +784,20 @@ function parseJsonMaybe(value, fallback) {
   return fallback;
 }
 
+function formatDateTR(dateStr) {
+  if (!dateStr) return "-";
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return String(dateStr);
+  return d.toLocaleString("tr-TR", {
+    timeZone: "Europe/Istanbul",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit"
+  });
+}
+
 function shortText(value) {
   return String(value || "-");
 }
@@ -789,7 +815,7 @@ function renderRecords(records) {
       <div class="list-card">
         <b>${shortText(r.Plaka)} - ${shortText(r.AracModel)}</b>
         <div class="list-meta">
-          Tarih: ${shortText(r.TarihSaat)}<br>
+          Tarih: ${formatDateTR(r.TarihSaat)}<br>
           Müşteri: ${shortText(r.MusteriAdi)}<br>
           İş Emri: ${shortText(r.IsEmriNo)}<br>
           Durum: ${shortText(r.Durum)}
@@ -886,19 +912,19 @@ function renderDetail(r) {
   }).join("");
 
   const beforeHtml = beforePhotos.length
-    ? beforePhotos.map(url => `<img class="detail-img" src="${url}" loading="lazy">`).join("")
+    ? beforePhotos.map(url => `<img class="detail-img" src="${url}" loading="lazy" onclick="openImage(\'${url}\')">`).join("")
     : '<div class="list-meta">Öncesi fotoğraf yok.</div>';
 
   const afterHtml = afterPhotos.length
-    ? afterPhotos.map(url => `<img class="detail-img" src="${url}" loading="lazy">`).join("")
+    ? afterPhotos.map(url => `<img class="detail-img" src="${url}" loading="lazy" onclick="openImage(\'${url}\')">`).join("")
     : '<div class="list-meta">Sonrası fotoğraf yok.</div>';
 
   const techSign = r.UstaImzaPath
-    ? `<img class="detail-img" src="${r.UstaImzaPath}" loading="lazy">`
+    ? `<img class="detail-img" src="${r.UstaImzaPath}" loading="lazy" onclick="openImage(\'${r.UstaImzaPath}\')">`
     : '<div class="list-meta">Usta imzası yok.</div>';
 
   const controllerSign = r.KontrolImzaPath
-    ? `<img class="detail-img" src="${r.KontrolImzaPath}" loading="lazy">`
+    ? `<img class="detail-img" src="${r.KontrolImzaPath}" loading="lazy" onclick="openImage(\'${r.KontrolImzaPath}\')">`
     : '<div class="list-meta">Kontrol eden imzası yok.</div>';
 
   content.innerHTML = `
@@ -906,7 +932,7 @@ function renderDetail(r) {
       <b>${shortText(r.Plaka)} - ${shortText(r.AracModel)}</b>
       <div class="list-meta">
         ID: ${shortText(r.ID)}<br>
-        Tarih: ${shortText(r.TarihSaat)}<br>
+        Tarih: ${formatDateTR(r.TarihSaat)}<br>
         Müşteri: ${shortText(r.MusteriAdi)}<br>
         İş Emri: ${shortText(r.IsEmriNo)}<br>
         Montaj Ustası: ${shortText(r.MontajUstasi)}
@@ -936,6 +962,8 @@ function renderDetail(r) {
       <b>Kontrol Eden</b>
       ${controllerSign}
     </div>
+
+    <button onclick="printDetail()" style="margin-top:10px;background:#22c55e;color:#052e16;width:100%;">Fiş Al</button>
   `;
 }
 
@@ -945,10 +973,17 @@ function resetForm() {
   document.getElementById("customer").value = "";
   document.getElementById("brandModel").value = "";
   document.getElementById("technicianName").value = "";
+  document.getElementById("saveBtn").textContent = "Kaydı Kaydet";
 
   state.answers = {};
   state.beforePhotos = [];
   state.afterPhotos = [];
+  state.existingBeforePhotoPaths = [];
+  state.existingAfterPhotoPaths = [];
+  state.existingTechnicianSignaturePath = "";
+  state.existingControllerSignaturePath = "";
+  editMode = false;
+  editingId = null;
 
   init();
   renderPhotos();
@@ -1129,8 +1164,8 @@ async function uploadSignature(checklistId, canvasId, name) {
   const uploaded = await uploadOneFile(SIGNATURE_BUCKET, path, blob);
   return uploaded.url;
 }
- async function deleteRecord(id, btn) {
-  const ok = confirm("Bu kaydı silmek istediğine emin misin?");
+ async function deleteRecord(id, btn, silent = false) {
+  const ok = silent ? true : confirm("Bu kaydı silmek istediğine emin misin?");
   if (!ok) return;
 
   const oldText = btn ? btn.textContent : "";
@@ -1202,8 +1237,10 @@ async function uploadSignature(checklistId, canvasId, name) {
       throw new Error(data.error || "Silme başarısız");
     }
 
-    alert("Kayıt + foto + imzalar silindi ✅");
-    await loadTodayRecords();
+    if (!silent) {
+      alert("Kayıt + foto + imzalar silindi ✅");
+      await loadTodayRecords();
+    }
 
   } catch (e) {
     alert("Silme hatası: " + e.message);
@@ -1226,10 +1263,16 @@ async function uploadSignature(checklistId, canvasId, name) {
 
   const r = data.record;
 
+  state.existingBeforePhotoPaths = parseJsonMaybe(r.OnceFotoPaths, []);
+  state.existingAfterPhotoPaths = parseJsonMaybe(r.SonraFotoPaths, []);
+  state.existingTechnicianSignaturePath = r.UstaImzaPath || "";
+  state.existingControllerSignaturePath = r.KontrolImzaPath || "";
+
   showPage("add");
 
   editMode = true;
   editingId = id;
+  document.getElementById("saveBtn").textContent = "Güncellemeyi Kaydet";
 
   document.getElementById("workOrder").value = r.IsEmriNo || "";
   document.getElementById("plate").value = r.Plaka || "";
@@ -1245,6 +1288,55 @@ async function uploadSignature(checklistId, canvasId, name) {
   });
 
   window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function printDetail() {
+  const content = document.getElementById("detailContent").innerHTML;
+  const div = document.createElement("div");
+  div.id = "printArea";
+  div.innerHTML = content;
+  document.body.appendChild(div);
+  window.print();
+  div.remove();
+}
+
+async function deleteTestRecords() {
+  const ok = confirm("Tüm TEST kayıtları ve bağlı Supabase dosyaları silinecek. Emin misin?");
+  if (!ok) return;
+
+  const container = document.getElementById("recordsList");
+  container.innerHTML = '<div class="list-meta">TEST kayıtları aranıyor...</div>';
+
+  try {
+    const res = await fetch(API_URL + "?action=searchAllRecords&q=TEST");
+    const data = await res.json();
+
+    if (!data.ok) throw new Error(data.error || "TEST kayıtları alınamadı");
+
+    const records = (data.records || []).filter(r =>
+      String(r.Plaka || "").toLocaleUpperCase("tr-TR").includes("TEST")
+    );
+
+    if (!records.length) {
+      container.innerHTML = '<div class="list-meta">Silinecek TEST kaydı bulunamadı.</div>';
+      return;
+    }
+
+    let deleted = 0;
+
+    for (const r of records) {
+      container.innerHTML = `<div class="list-meta">Siliniyor: ${deleted + 1}/${records.length} - ${r.Plaka || r.ID}</div>`;
+      await deleteRecord(r.ID, null, true);
+      deleted++;
+    }
+
+    alert(`${deleted} TEST kaydı temizlendi ✅`);
+    await loadTodayRecords();
+
+  } catch (e) {
+    alert("TEST temizleme hatası: " + e.message);
+    await loadTodayRecords();
+  }
 }
 
 init();
