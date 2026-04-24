@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Montaj Kontrol</title>
+
+<style>
+body {
+  font-family: Arial;
+  background: #0f172a;
+  color: white;
+  padding: 15px;
+}
+
+input, textarea {
+  width: 100%;
+  padding: 10px;
+  margin-top: 5px;
+  border-radius: 8px;
+  border: none;
+}
+
+.card {
+  background: #1e293b;
+  padding: 15px;
+  margin-top: 10px;
+  border-radius: 10px;
+}
+
+button {
+  padding: 15px;
+  width: 100%;
+  border: none;
+  border-radius: 10px;
+  margin-top: 10px;
+  font-weight: bold;
+}
+
+.save {
+  background: #22c55e;
+}
+
+.yes { background: #16a34a; }
+.no { background: #dc2626; }
+
+.check {
+  margin-bottom: 10px;
+}
+</style>
+</head>
+
+<body>
+
+<h2>Montaj Kontrol Formu</h2>
+
+<div class="card">
+  <input id="workOrder" placeholder="İş Emri No">
+  <input id="plate" placeholder="Plaka">
+  <input id="customer" placeholder="Müşteri Adı">
+  <input id="brandModel" placeholder="Araç Model">
+  <input id="technicianName" placeholder="Usta Adı">
+</div>
+
+<div class="card" id="checklist"></div>
+
+<button class="save" onclick="save()">Kaydı Kaydet</button>
+
+<script>
+
+// 🔴 BURAYA KENDİ WEB APP URL'İNİ KOY
+const API_URL = "https://script.google.com/macros/s/AKfycbw2TKbY0S56gHEv4OEeu05_mwAtEg-Vibmc7Skxt1L5yVVYNgK68t5naMmxV1BiusJw2Q/exec";
+
+const items = [
+"İş emri ile araç plakası uyumlu mu?",
+"Müşteri şikayetleri not edilmiş mi?",
+"Araç hasar kontrolü yapıldı mı?",
+"Aksesuar düzgün yerleşmiş mi?",
+"Sabitlemeler sağlam mı?",
+"Boşluk veya kasılma var mı?",
+"Kapı cam çalışması normal mi?",
+"Kablo tesisatı düzgün mü?",
+"Elektrik sistemi çalışıyor mu?",
+"Sigorta kontrol edildi mi?",
+"Arıza lambası var mı?",
+"Temizlik yapıldı mı?",
+"Yeni çizik var mı?",
+"Koruyucular çıkarıldı mı?",
+"Garanti hazır mı?",
+"Eski parçalar hazır mı?"
+];
+
+const state = {};
+
+function init() {
+  const container = document.getElementById("checklist");
+
+  items.forEach((item, i) => {
+    const div = document.createElement("div");
+    div.className = "check";
+
+    div.innerHTML = `
+      <b>${item}</b><br>
+      <button class="yes" onclick="setVal(${i}, 'Evet')">Evet</button>
+      <button class="no" onclick="setVal(${i}, 'Hayır')">Hayır</button>
+      <textarea id="note-${i}" placeholder="Açıklama"></textarea>
+    `;
+
+    container.appendChild(div);
+  });
+}
+
+function setVal(i, val) {
+  state[i] = val;
+}
+
+function getChecklist() {
+  return items.map((item, i) => ({
+    label: item,
+    answer: state[i] || "",
+    note: document.getElementById("note-" + i).value
+  }));
+}
+
+async function save() {
+
+  const payload = {
+    IsEmriNo: document.getElementById("workOrder").value,
+    plate: document.getElementById("plate").value,
+    customerName: document.getElementById("customer").value,
+    vehicleModel: document.getElementById("brandModel").value,
+    technicianName: document.getElementById("technicianName").value,
+    checklist: getChecklist(),
+    beforePhotoCount: 0,
+    afterPhotoCount: 0,
+    status: "Tamamlandi"
+  };
+
+  try {
+
+    const res = await fetch(API_URL, {
+      method: "POST",
+      body: JSON.stringify({
+        action: "addChecklistRecord",
+        payload
+      })
+    });
+
+    const data = await res.json();
+
+    if (!data.ok) throw new Error(data.error);
+
+    alert("Kayıt başarılı ✅");
+
+  } catch (e) {
+    alert("Hata: " + e.message);
+  }
+}
+
+init();
+
+</script>
+
+</body>
+</html>
