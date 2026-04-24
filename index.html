@@ -7,45 +7,111 @@
 
 <style>
 body {
-  font-family: Arial;
+  font-family: Arial, sans-serif;
   background: #0f172a;
   color: white;
-  padding: 15px;
+  padding: 14px;
+  margin: 0;
 }
 
-input, textarea {
-  width: 100%;
-  padding: 10px;
-  margin-top: 5px;
-  border-radius: 8px;
-  border: none;
+h2 {
+  margin-top: 0;
 }
 
 .card {
   background: #1e293b;
-  padding: 15px;
-  margin-top: 10px;
+  padding: 14px;
+  margin-top: 12px;
+  border-radius: 14px;
+}
+
+.question-card {
+  background: #111827;
+  border: 1px solid #334155;
+  padding: 14px;
+  margin-bottom: 12px;
+  border-radius: 14px;
+}
+
+.question-title {
+  font-weight: bold;
+  margin-bottom: 10px;
+  line-height: 1.35;
+}
+
+input, textarea {
+  width: 100%;
+  padding: 11px;
+  margin-top: 8px;
   border-radius: 10px;
+  border: 1px solid #334155;
+  background: #020617;
+  color: white;
+  box-sizing: border-box;
+}
+
+textarea {
+  min-height: 70px;
+}
+
+.btn-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
 }
 
 button {
-  padding: 15px;
-  width: 100%;
   border: none;
   border-radius: 10px;
-  margin-top: 10px;
+  padding: 11px 12px;
   font-weight: bold;
+  cursor: pointer;
+}
+
+.choice-btn {
+  flex: 1;
+  background: #334155;
+  color: white;
+  border: 2px solid transparent;
+}
+
+.choice-btn.selected-yes {
+  background: #16a34a;
+  border-color: #bbf7d0;
+  box-shadow: 0 0 0 3px rgba(34,197,94,.25);
+}
+
+.choice-btn.selected-no {
+  background: #dc2626;
+  border-color: #fecaca;
+  box-shadow: 0 0 0 3px rgba(239,68,68,.25);
 }
 
 .save {
+  width: 100%;
   background: #22c55e;
+  color: #052e16;
+  font-size: 16px;
+  margin-top: 14px;
 }
 
-.yes { background: #16a34a; }
-.no { background: #dc2626; }
+.save:disabled {
+  background: #64748b;
+  color: #cbd5e1;
+  cursor: not-allowed;
+}
 
-.check {
-  margin-bottom: 10px;
+.status {
+  font-size: 12px;
+  color: #94a3b8;
+  margin-top: 6px;
+}
+
+.top-actions {
+  position: sticky;
+  bottom: 0;
+  background: rgba(15,23,42,.95);
+  padding: 10px 0;
 }
 </style>
 </head>
@@ -62,47 +128,57 @@ button {
   <input id="technicianName" placeholder="Usta Adı">
 </div>
 
-<div class="card" id="checklist"></div>
+<div class="card">
+  <h3>Kontrol Listesi</h3>
+  <div id="checklist"></div>
+</div>
 
-<button class="save" onclick="save()">Kaydı Kaydet</button>
+<div class="top-actions">
+  <button id="saveBtn" class="save" onclick="save()">Kaydı Kaydet</button>
+  <div id="saveStatus" class="status"></div>
+</div>
 
 <script>
-
-// 🔴 BURAYA KENDİ WEB APP URL'İNİ KOY
 const API_URL = "https://script.google.com/macros/s/AKfycbw2TKbY0S56gHEv4OEeu05_mwAtEg-Vibmc7Skxt1L5yVVYNgK68t5naMmxV1BiusJw2Q/exec";
 
 const items = [
-"İş emri ile araç plakası uyumlu mu?",
-"Müşteri şikayetleri not edilmiş mi?",
-"Araç hasar kontrolü yapıldı mı?",
-"Aksesuar düzgün yerleşmiş mi?",
-"Sabitlemeler sağlam mı?",
-"Boşluk veya kasılma var mı?",
-"Kapı cam çalışması normal mi?",
-"Kablo tesisatı düzgün mü?",
-"Elektrik sistemi çalışıyor mu?",
-"Sigorta kontrol edildi mi?",
-"Arıza lambası var mı?",
-"Temizlik yapıldı mı?",
-"Yeni çizik var mı?",
-"Koruyucular çıkarıldı mı?",
-"Garanti hazır mı?",
-"Eski parçalar hazır mı?"
+  "İş emri ile araç plakası uyumlu mu?",
+  "Müşteri şikayetleri ve özel istekler not edilmiş mi?",
+  "Araç içi/dışı mevcut hasar kayıtları kontrol edildi mi?",
+  "Montajı yapılan aksesuarların yerleşimi simetrik ve nizami mi?",
+  "Sabitleme elemanları sağlam mı?",
+  "Gövde ile aksesuar arasında boşluk veya kasılma var mı?",
+  "Hareketli parçaların çalışmasına engel bir durum var mı?",
+  "Kablo tesisatı uygun ve izole edilmiş mi?",
+  "Elektrikli aksesuarların fonksiyonları tam mı?",
+  "Sigorta değerleri ve bağlantı noktaları kontrol edildi mi?",
+  "Gösterge panelinde arıza lambası yanıyor mu?",
+  "Montaj sonrası temizlik yapıldı mı?",
+  "Araç yüzeyinde yeni çizik veya deformasyon var mı?",
+  "Koruyucu kılıflar çıkarıldı mı?",
+  "Garanti belgeleri ve kullanım kılavuzları hazırlandı mı?",
+  "Değişen veya çıkan eski parçalar müşteriye hazırlanmış mı?"
 ];
 
 const state = {};
+let saving = false;
 
 function init() {
   const container = document.getElementById("checklist");
+  container.innerHTML = "";
 
   items.forEach((item, i) => {
     const div = document.createElement("div");
-    div.className = "check";
+    div.className = "question-card";
 
     div.innerHTML = `
-      <b>${item}</b><br>
-      <button class="yes" onclick="setVal(${i}, 'Evet')">Evet</button>
-      <button class="no" onclick="setVal(${i}, 'Hayır')">Hayır</button>
+      <div class="question-title">${i + 1}. ${item}</div>
+
+      <div class="btn-row">
+        <button id="yes-${i}" class="choice-btn" onclick="setVal(${i}, 'Evet')">Evet</button>
+        <button id="no-${i}" class="choice-btn" onclick="setVal(${i}, 'Hayır')">Hayır</button>
+      </div>
+
       <textarea id="note-${i}" placeholder="Açıklama"></textarea>
     `;
 
@@ -112,31 +188,105 @@ function init() {
 
 function setVal(i, val) {
   state[i] = val;
+
+  const yesBtn = document.getElementById("yes-" + i);
+  const noBtn = document.getElementById("no-" + i);
+
+  yesBtn.classList.remove("selected-yes");
+  noBtn.classList.remove("selected-no");
+
+  if (val === "Evet") {
+    yesBtn.classList.add("selected-yes");
+  }
+
+  if (val === "Hayır") {
+    noBtn.classList.add("selected-no");
+  }
 }
 
 function getChecklist() {
   return items.map((item, i) => ({
     label: item,
     answer: state[i] || "",
-    note: document.getElementById("note-" + i).value
+    note: document.getElementById("note-" + i).value.trim()
   }));
 }
 
-async function save() {
+function normalizePlate(value) {
+  return String(value || "")
+    .toLocaleUpperCase("tr-TR")
+    .replace(/\s+/g, "")
+    .replace(/-/g, "")
+    .trim();
+}
 
-  const payload = {
-    IsEmriNo: document.getElementById("workOrder").value,
-    plate: document.getElementById("plate").value,
-    customerName: document.getElementById("customer").value,
-    vehicleModel: document.getElementById("brandModel").value,
-    technicianName: document.getElementById("technicianName").value,
-    checklist: getChecklist(),
-    beforePhotoCount: 0,
-    afterPhotoCount: 0,
-    status: "Tamamlandi"
-  };
+async function checkDuplicatePlate(plate) {
+  const q = encodeURIComponent(plate);
+
+  const res = await fetch(API_URL + "?action=searchAllRecords&q=" + q);
+  const data = await res.json();
+
+  if (!data.ok) return [];
+
+  const currentPlate = normalizePlate(plate);
+
+  return (data.records || []).filter(r => {
+    return normalizePlate(r.Plaka) === currentPlate;
+  });
+}
+
+async function save() {
+  if (saving) return;
+
+  const saveBtn = document.getElementById("saveBtn");
+  const saveStatus = document.getElementById("saveStatus");
+
+  const plate = document.getElementById("plate").value.trim();
+
+  if (!plate) {
+    alert("Plaka boş olamaz knk.");
+    return;
+  }
+
+  saving = true;
+  saveBtn.disabled = true;
+  saveBtn.textContent = "Kontrol ediliyor...";
+  saveStatus.textContent = "Aynı plaka kontrol ediliyor...";
 
   try {
+    const duplicates = await checkDuplicatePlate(plate);
+
+    if (duplicates.length > 0) {
+      const devam = confirm(
+        "Bu plakaya ait daha önce kayıt mevcut.\n\n" +
+        "Kayıt sayısı: " + duplicates.length + "\n\n" +
+        "Yine de devam edilsin mi?"
+      );
+
+      if (!devam) {
+        saveStatus.textContent = "Kayıt iptal edildi.";
+        return;
+      }
+    }
+
+    saveBtn.textContent = "Kaydediliyor...";
+    saveStatus.textContent = "Kayıt Sheets'e gönderiliyor...";
+
+    const payload = {
+      IsEmriNo: document.getElementById("workOrder").value.trim(),
+      plate: plate,
+      customerName: document.getElementById("customer").value.trim(),
+      vehicleModel: document.getElementById("brandModel").value.trim(),
+      technicianName: document.getElementById("technicianName").value.trim(),
+      checklist: getChecklist(),
+      beforePhotoCount: 0,
+      afterPhotoCount: 0,
+      beforePhotoPaths: [],
+      afterPhotoPaths: [],
+      technicianSignaturePath: "",
+      controllerSignaturePath: "",
+      status: "Tamamlandi"
+    };
 
     const res = await fetch(API_URL, {
       method: "POST",
@@ -148,17 +298,28 @@ async function save() {
 
     const data = await res.json();
 
-    if (!data.ok) throw new Error(data.error);
+    if (!data.ok) {
+      throw new Error(data.error || "Kayıt başarısız");
+    }
+
+    saveBtn.textContent = "Kaydedildi ✅";
+    saveStatus.textContent = "Kayıt başarılı. ID: " + data.record.ID;
 
     alert("Kayıt başarılı ✅");
 
   } catch (e) {
     alert("Hata: " + e.message);
+    saveStatus.textContent = "Hata: " + e.message;
+  } finally {
+    setTimeout(() => {
+      saving = false;
+      saveBtn.disabled = false;
+      saveBtn.textContent = "Kaydı Kaydet";
+    }, 1200);
   }
 }
 
 init();
-
 </script>
 
 </body>
