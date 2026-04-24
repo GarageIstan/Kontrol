@@ -351,11 +351,50 @@ button {
     top: 0;
     width: 100%;
   }
+    #printArea {
+  font-size: 9px;
+  line-height: 1.25;
+}
+
+#printArea h4 {
+  margin: 4px 0;
+  font-size: 11px;
+}
+
+#printArea .detail-section {
+  padding: 5px;
+  margin-top: 5px;
+  border-radius: 6px;
+}
+
+#printArea .detail-item {
+  padding: 3px 0;
+  font-size: 8px;
+}
+
+#printArea .detail-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+}
+
+#printArea .detail-img {
+  max-height: 55px;
+  object-fit: cover;
+  border-radius: 4px;
+}
+
+/* İmza görselleri daha okunaklı kalsın */
+#printArea .detail-section:last-child .detail-img {
+  max-height: 90px;
+  object-fit: contain;
+}
 
   @page {
     size: A5 portrait;
     margin: 5mm;
   }
+    
 }
 
 .detail-grid {
@@ -904,10 +943,10 @@ function renderDetail(r) {
     const answerClass = x.answer === "Evet" ? "answer-evet" : (x.answer === "Hayır" ? "answer-hayir" : "");
     return `
       <div class="detail-item">
-        <b>${i + 1}. ${x.label || x.item || "-"}</b><br>
-        Cevap: <span class="${answerClass}">${x.answer || "-"}</span><br>
-        Açıklama: ${x.note || "-"}
-      </div>
+  <b>${i + 1}. ${x.label || x.item || "-"}</b>
+  — <span class="${answerClass}">${x.answer || "-"}</span>
+  ${x.note ? " | " + x.note : ""}
+</div>
     `;
   }).join("");
 
