@@ -741,7 +741,7 @@ function renderRecords(records) {
         </div>
         <div class="list-actions">
           <button onclick="openDetail('${r.ID}')">Detay Aç</button>
-          <button style="background:#dc2626;" onclick="deleteRecord('${r.ID}')">Sil</button>
+          <button style="background:#dc2626;" onclick="deleteRecord('${r.ID}', this)">Sil</button>
         </div>
       </div>
     `;
@@ -1073,13 +1073,19 @@ async function uploadSignature(checklistId, canvasId, name) {
   const uploaded = await uploadOneFile(SIGNATURE_BUCKET, path, blob);
   return uploaded.url;
 }
-  async function deleteRecord(id) {
+ async function deleteRecord(id, btn) {
   const ok = confirm("Bu kaydı silmek istediğine emin misin?");
   if (!ok) return;
 
+  const oldText = btn ? btn.textContent : "";
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = "Siliniyor...";
+    btn.style.background = "#64748b";
+  }
+
   try {
-    // 1. Önce detayı çek (foto path'leri almak için)
-    const resDetail = await fetch(API_URL + "?action=getRecordById&id=" + id);
+    const resDetail = await fetch(API_URL + "?action=getRecordById&id=" + encodeURIComponent(id));
     const detailData = await resDetail.json();
 
     if (!detailData.ok || !detailData.record) {
@@ -1090,42 +1096,42 @@ async function uploadSignature(checklistId, canvasId, name) {
 
     const beforePhotos = parseJsonMaybe(r.OnceFotoPaths, []);
     const afterPhotos = parseJsonMaybe(r.SonraFotoPaths, []);
-
     const techSign = r.UstaImzaPath ? [r.UstaImzaPath] : [];
     const controlSign = r.KontrolImzaPath ? [r.KontrolImzaPath] : [];
 
-    // 2. URL → path çevir
     function urlToPath(url) {
-      try {
-        const parts = url.split("/storage/v1/object/public/");
-        return parts[1];
-      } catch {
-        return null;
-      }
+      const marker = "/storage/v1/object/public/";
+      const idx = String(url).indexOf(marker);
+      if (idx === -1) return null;
+
+      const rest = String(url).slice(idx + marker.length);
+      const parts = rest.split("/");
+
+      // ilk parça bucket adı, onu çıkarıyoruz
+      parts.shift();
+
+      return parts.join("/");
     }
 
-    const photoPaths = [...beforePhotos, ...afterPhotos]
-      .map(urlToPath)
-      .filter(Boolean);
+    const photoPaths = [...beforePhotos, ...afterPhotos].map(urlToPath).filter(Boolean);
+    const signPaths = [...techSign, ...controlSign].map(urlToPath).filter(Boolean);
 
-    const signPaths = [...techSign, ...controlSign]
-      .map(urlToPath)
-      .filter(Boolean);
-
-    // 3. Supabase'den sil
     if (photoPaths.length) {
-      await supabaseClient.storage
+      const { error } = await supabaseClient.storage
         .from("checklist-photos")
         .remove(photoPaths);
+
+      if (error) throw new Error("Foto silme hatası: " + error.message);
     }
 
     if (signPaths.length) {
-      await supabaseClient.storage
+      const { error } = await supabaseClient.storage
         .from("checklist-signatures")
         .remove(signPaths);
+
+      if (error) throw new Error("İmza silme hatası: " + error.message);
     }
 
-    // 4. Sheets'ten sil
     const res = await fetch(API_URL, {
       method: "POST",
       body: JSON.stringify({
@@ -1145,6 +1151,12 @@ async function uploadSignature(checklistId, canvasId, name) {
 
   } catch (e) {
     alert("Silme hatası: " + e.message);
+
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = oldText || "Sil";
+      btn.style.background = "#dc2626";
+    }
   }
 }
 
