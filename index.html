@@ -113,7 +113,97 @@ button {
   background: rgba(15,23,42,.95);
   padding: 10px 0;
 }
+  .photo-box {
+  background: #111827;
+  border: 1px solid #334155;
+  padding: 14px;
+  margin-bottom: 12px;
+  border-radius: 14px;
+}
+
+.photo-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.photo-btn {
+  flex: 1;
+  min-width: 130px;
+  background: #2563eb;
+  color: white;
+}
+
+.preview-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.preview-item {
+  position: relative;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #020617;
+  border: 1px solid #334155;
+}
+
+.preview-item img {
+  width: 100%;
+  height: 90px;
+  object-fit: cover;
+  display: block;
+}
+
+.preview-item button {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border-radius: 50%;
+  background: rgba(0,0,0,.7);
+  color: white;
+}
+
+.signature-box {
+  background: #111827;
+  border: 1px solid #334155;
+  padding: 14px;
+  margin-bottom: 12px;
+  border-radius: 14px;
+}
+
+.signature-pad {
+  width: 100%;
+  height: 170px;
+  background: white;
+  border-radius: 10px;
+  display: block;
+  touch-action: none;
+}
+
+.small-btn-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.small-btn-row button {
+  flex: 1;
+  background: #334155;
+  color: white;
+}
+
+@media (max-width: 480px) {
+  .preview-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
 </style>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 
 <body>
@@ -127,12 +217,54 @@ button {
   <input id="brandModel" placeholder="Araç Model">
   <input id="technicianName" placeholder="Usta Adı">
 </div>
+<div class="card">
+  <h3>Araç Öncesi Fotoğraflar</h3>
 
+  <div class="photo-box">
+    <div class="photo-row">
+      <button class="photo-btn" onclick="document.getElementById('beforeInput').click()">+ Öncesi Foto Ekle</button>
+    </div>
+
+    <input id="beforeInput" type="file" accept="image/*" capture="environment" multiple hidden>
+    <div id="beforePreview" class="preview-grid"></div>
+  </div>
+</div>
 <div class="card">
   <h3>Kontrol Listesi</h3>
   <div id="checklist"></div>
 </div>
+<div class="card">
+  <h3>Araç Sonrası Fotoğraflar</h3>
 
+  <div class="photo-box">
+    <div class="photo-row">
+      <button class="photo-btn" onclick="document.getElementById('afterInput').click()">+ Sonrası Foto Ekle</button>
+    </div>
+
+    <input id="afterInput" type="file" accept="image/*" capture="environment" multiple hidden>
+    <div id="afterPreview" class="preview-grid"></div>
+  </div>
+</div>
+
+<div class="card">
+  <h3>İmzalar</h3>
+
+  <div class="signature-box">
+    <b>Montaj Ustası İmza</b>
+    <canvas id="techSignature" class="signature-pad"></canvas>
+    <div class="small-btn-row">
+      <button onclick="clearSignature('techSignature')">Temizle</button>
+    </div>
+  </div>
+
+  <div class="signature-box">
+    <b>Kontrol Eden İmza</b>
+    <canvas id="controllerSignature" class="signature-pad"></canvas>
+    <div class="small-btn-row">
+      <button onclick="clearSignature('controllerSignature')">Temizle</button>
+    </div>
+  </div>
+</div>
 <div class="top-actions">
   <button id="saveBtn" class="save" onclick="save()">Kaydı Kaydet</button>
   <div id="saveStatus" class="status"></div>
@@ -140,7 +272,13 @@ button {
 
 <script>
 const API_URL = "https://script.google.com/macros/s/AKfycbw2TKbY0S56gHEv4OEeu05_mwAtEg-Vibmc7Skxt1L5yVVYNgK68t5naMmxV1BiusJw2Q/exec";
+const SUPABASE_URL = "https://votjqjtkimbffugetpmx.supabase.co/rest/v1/";
+const SUPABASE_ANON_KEY = "sb_publishable_1-IwVJl7wJUsnNybjKeLfA_hbTISvpj";
 
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+const PHOTO_BUCKET = "checklist-photos";
+const SIGNATURE_BUCKET = "checklist-signatures";
 const items = [
   "İş emri ile araç plakası uyumlu mu?",
   "Müşteri şikayetleri ve özel istekler not edilmiş mi?",
@@ -160,7 +298,12 @@ const items = [
   "Değişen veya çıkan eski parçalar müşteriye hazırlanmış mı?"
 ];
 
-const state = {};
+const state = {
+  answers: {},
+  beforePhotos: [],
+  afterPhotos: []
+};
+
 let saving = false;
 
 function init() {
@@ -187,7 +330,7 @@ function init() {
 }
 
 function setVal(i, val) {
-  state[i] = val;
+state.answers[i] = val;
 
   const yesBtn = document.getElementById("yes-" + i);
   const noBtn = document.getElementById("no-" + i);
@@ -207,7 +350,7 @@ function setVal(i, val) {
 function getChecklist() {
   return items.map((item, i) => ({
     label: item,
-    answer: state[i] || "",
+ answer: state.answers[i] || "",
     note: document.getElementById("note-" + i).value.trim()
   }));
 }
@@ -271,7 +414,16 @@ async function save() {
 
     saveBtn.textContent = "Kaydediliyor...";
     saveStatus.textContent = "Kayıt Sheets'e gönderiliyor...";
+const tempId = "CHK-" + Date.now();
 
+saveBtn.textContent = "Fotoğraflar yükleniyor...";
+saveStatus.textContent = "Supabase Storage'a fotoğraf ve imzalar yükleniyor...";
+
+const beforePhotoPaths = await uploadPhotoGroup(tempId, "before", state.beforePhotos);
+const afterPhotoPaths = await uploadPhotoGroup(tempId, "after", state.afterPhotos);
+
+const technicianSignaturePath = await uploadSignature(tempId, "techSignature", "technician");
+const controllerSignaturePath = await uploadSignature(tempId, "controllerSignature", "controller");
     const payload = {
       IsEmriNo: document.getElementById("workOrder").value.trim(),
       plate: plate,
@@ -279,12 +431,13 @@ async function save() {
       vehicleModel: document.getElementById("brandModel").value.trim(),
       technicianName: document.getElementById("technicianName").value.trim(),
       checklist: getChecklist(),
-      beforePhotoCount: 0,
-      afterPhotoCount: 0,
-      beforePhotoPaths: [],
-      afterPhotoPaths: [],
-      technicianSignaturePath: "",
-      controllerSignaturePath: "",
+      id: tempId,
+beforePhotoCount: beforePhotoPaths.length,
+afterPhotoCount: afterPhotoPaths.length,
+beforePhotoPaths: beforePhotoPaths,
+afterPhotoPaths: afterPhotoPaths,
+technicianSignaturePath: technicianSignaturePath,
+controllerSignaturePath: controllerSignaturePath,
       status: "Tamamlandi"
     };
 
@@ -331,8 +484,203 @@ function resetForm() {
   document.getElementById("brandModel").value = "";
   document.getElementById("technicianName").value = "";
 
-  Object.keys(state).forEach(key => delete state[key]);
+ state.answers = {};
+state.beforePhotos = [];
+state.afterPhotos = [];
+renderPhotos();
+clearSignature("techSignature");
+clearSignature("controllerSignature");
+function bindPhotoInputs() {
+  document.getElementById("beforeInput").addEventListener("change", function(e) {
+    addPhotos("beforePhotos", e.target.files);
+    e.target.value = "";
+  });
 
+  document.getElementById("afterInput").addEventListener("change", function(e) {
+    addPhotos("afterPhotos", e.target.files);
+    e.target.value = "";
+  });
+}
+
+function addPhotos(key, files) {
+  const list = Array.from(files || []);
+
+  list.forEach(file => {
+    state[key].push(file);
+  });
+
+  renderPhotos();
+}
+
+function renderPhotos() {
+  renderPhotoGroup("beforePhotos", "beforePreview");
+  renderPhotoGroup("afterPhotos", "afterPreview");
+}
+
+function renderPhotoGroup(key, containerId) {
+  const container = document.getElementById(containerId);
+  const list = state[key];
+
+  if (!list.length) {
+    container.innerHTML = "";
+    return;
+  }
+
+  container.innerHTML = list.map((file, index) => {
+    const url = URL.createObjectURL(file);
+
+    return `
+      <div class="preview-item">
+        <img src="${url}">
+        <button onclick="removePhoto('${key}', ${index})">×</button>
+      </div>
+    `;
+  }).join("");
+}
+
+function removePhoto(key, index) {
+  state[key].splice(index, 1);
+  renderPhotos();
+}
+
+function setupSignaturePad(canvasId) {
+  const canvas = document.getElementById(canvasId);
+  const ctx = canvas.getContext("2d");
+
+  function resizeCanvas() {
+    const ratio = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width * ratio;
+    canvas.height = rect.height * ratio;
+    ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+    ctx.lineWidth = 2.5;
+    ctx.lineCap = "round";
+    ctx.strokeStyle = "#111827";
+  }
+
+  resizeCanvas();
+
+  let drawing = false;
+  let lastX = 0;
+  let lastY = 0;
+
+  function pos(e) {
+    const rect = canvas.getBoundingClientRect();
+    const p = e.touches ? e.touches[0] : e;
+    return {
+      x: p.clientX - rect.left,
+      y: p.clientY - rect.top
+    };
+  }
+
+  function start(e) {
+    drawing = true;
+    const p = pos(e);
+    lastX = p.x;
+    lastY = p.y;
+  }
+
+  function move(e) {
+    if (!drawing) return;
+    e.preventDefault();
+
+    const p = pos(e);
+    ctx.beginPath();
+    ctx.moveTo(lastX, lastY);
+    ctx.lineTo(p.x, p.y);
+    ctx.stroke();
+
+    lastX = p.x;
+    lastY = p.y;
+  }
+
+  function end() {
+    drawing = false;
+  }
+
+  canvas.addEventListener("mousedown", start);
+  canvas.addEventListener("mousemove", move);
+  window.addEventListener("mouseup", end);
+
+  canvas.addEventListener("touchstart", start, { passive: false });
+  canvas.addEventListener("touchmove", move, { passive: false });
+  canvas.addEventListener("touchend", end);
+}
+
+function clearSignature(canvasId) {
+  const canvas = document.getElementById(canvasId);
+  const ctx = canvas.getContext("2d");
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+}
+
+function canvasToBlob(canvasId) {
+  return new Promise(resolve => {
+    const canvas = document.getElementById(canvasId);
+    canvas.toBlob(blob => resolve(blob), "image/png", 0.9);
+  });
+}
+  function safeName(name) {
+  return String(name || "file")
+    .toLocaleLowerCase("tr-TR")
+    .replaceAll("ı", "i")
+    .replaceAll("ğ", "g")
+    .replaceAll("ü", "u")
+    .replaceAll("ş", "s")
+    .replaceAll("ö", "o")
+    .replaceAll("ç", "c")
+    .replace(/[^a-z0-9.]+/g, "-")
+    .replace(/-+/g, "-");
+}
+
+async function uploadOneFile(bucket, path, file) {
+  const { error } = await supabaseClient.storage
+    .from(bucket)
+    .upload(path, file, {
+      cacheControl: "3600",
+      upsert: true
+    });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  const { data } = supabaseClient.storage
+    .from(bucket)
+    .getPublicUrl(path);
+
+  return {
+    path,
+    url: data.publicUrl
+  };
+}
+
+async function uploadPhotoGroup(checklistId, type, files) {
+  const paths = [];
+
+  for (let i = 0; i < files.length; i++) {
+    const file = files[i];
+    const fileName = `${Date.now()}-${i + 1}-${safeName(file.name || "foto.jpg")}`;
+    const path = `${checklistId}/${type}/${fileName}`;
+
+    const uploaded = await uploadOneFile(PHOTO_BUCKET, path, file);
+    paths.push(uploaded.url);
+  }
+
+  return paths;
+}
+
+async function uploadSignature(checklistId, canvasId, name) {
+  const blob = await canvasToBlob(canvasId);
+
+  if (!blob || blob.size < 1000) {
+    return "";
+  }
+
+  const path = `${checklistId}/${name}.png`;
+  const uploaded = await uploadOneFile(SIGNATURE_BUCKET, path, blob);
+
+  return uploaded.url;
+}
   init();
 
   setTimeout(() => {
@@ -343,6 +691,10 @@ function resetForm() {
   }, 50);
 }
 init();
+bindPhotoInputs();
+renderPhotos();
+setupSignaturePad("techSignature");
+setupSignaturePad("controllerSignature");
 </script>
 
 </body>
