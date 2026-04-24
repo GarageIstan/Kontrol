@@ -360,7 +360,27 @@ button {
   margin: 4px 0;
   font-size: 11px;
 }
+#printArea .sign-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  margin-top: 6px;
+}
 
+#printArea .sign-box {
+  text-align: center;
+}
+
+#printArea .sign-box b {
+  display: block;
+  font-size: 9px;
+  margin-bottom: 4px;
+}
+
+#printArea .sign-box img {
+  max-height: 70px;
+  object-fit: contain;
+}
 #printArea .detail-section {
   padding: 5px;
   margin-top: 5px;
@@ -967,15 +987,21 @@ function renderDetail(r) {
     : '<div class="list-meta">Kontrol eden imzası yok.</div>';
 
   content.innerHTML = `
-    <div class="detail-section">
-      <b>${shortText(r.Plaka)} - ${shortText(r.AracModel)}</b>
-      <div class="list-meta">
-        ID: ${shortText(r.ID)}<br>
-        Tarih: ${formatDateTR(r.TarihSaat)}<br>
-        Müşteri: ${shortText(r.MusteriAdi)}<br>
-        İş Emri: ${shortText(r.IsEmriNo)}<br>
-        Montaj Ustası: ${shortText(r.MontajUstasi)}
-      </div>
+ <div class="detail-section">
+  <h4>İmzalar</h4>
+
+  <div class="sign-row">
+    <div class="sign-box">
+      <b>Montaj Ustası</b>
+      ${techSign}
+    </div>
+
+    <div class="sign-box">
+      <b>Kontrol Eden</b>
+      ${controllerSign}
+    </div>
+  </div>
+</div>
     </div>
 
     <div class="detail-section">
