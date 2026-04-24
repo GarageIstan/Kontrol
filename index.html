@@ -306,7 +306,7 @@ async function save() {
     saveStatus.textContent = "Kayıt başarılı. ID: " + data.record.ID;
 
     alert("Kayıt başarılı ✅");
-
+resetForm();
   } catch (e) {
     alert("Hata: " + e.message);
     saveStatus.textContent = "Hata: " + e.message;
@@ -318,7 +318,22 @@ async function save() {
     }, 1200);
   }
 }
+function resetForm() {
+  document.getElementById("workOrder").value = "";
+  document.getElementById("plate").value = "";
+  document.getElementById("customer").value = "";
+  document.getElementById("brandModel").value = "";
+  document.getElementById("technicianName").value = "";
 
+  Object.keys(state).forEach(key => delete state[key]);
+
+  items.forEach((_, i) => {
+    document.getElementById("note-" + i).value = "";
+
+    document.getElementById("yes-" + i).classList.remove("selected-yes");
+    document.getElementById("no-" + i).classList.remove("selected-no");
+  });
+}
 init();
 </script>
 
