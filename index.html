@@ -202,6 +202,142 @@ button {
     grid-template-columns: repeat(2, 1fr);
   }
 }
+
+.list-card {
+  background: #111827;
+  border: 1px solid #334155;
+  padding: 12px;
+  margin-bottom: 10px;
+  border-radius: 14px;
+}
+
+.list-card b {
+  display: block;
+  margin-bottom: 5px;
+}
+
+.list-meta {
+  color: #94a3b8;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.list-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.list-actions button {
+  flex: 1;
+  background: #2563eb;
+  color: white;
+}
+
+.search-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.search-row input {
+  flex: 1;
+}
+
+.search-row button {
+  background: #2563eb;
+  color: white;
+  white-space: nowrap;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.72);
+  z-index: 999;
+  display: none;
+  padding: 18px;
+  overflow-y: auto;
+}
+
+.modal {
+  max-width: 760px;
+  margin: 20px auto;
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 18px;
+  padding: 14px;
+  color: white;
+}
+
+.modal-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.modal-head button {
+  width: auto;
+  background: #334155;
+  color: white;
+}
+
+.detail-section {
+  background: #111827;
+  border: 1px solid #334155;
+  border-radius: 14px;
+  padding: 12px;
+  margin-top: 12px;
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+.detail-img {
+  width: 100%;
+  border-radius: 12px;
+  border: 1px solid #334155;
+  background: #020617;
+}
+
+.detail-item {
+  border-bottom: 1px solid #334155;
+  padding: 8px 0;
+  font-size: 13px;
+}
+
+.detail-item:last-child {
+  border-bottom: none;
+}
+
+.answer-evet {
+  color: #86efac;
+  font-weight: bold;
+}
+
+.answer-hayir {
+  color: #fca5a5;
+  font-weight: bold;
+}
+
+@media (max-width: 480px) {
+  .search-row {
+    flex-direction: column;
+  }
+
+  .search-row button {
+    width: 100%;
+  }
+
+  .detail-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -265,6 +401,30 @@ button {
     </div>
   </div>
 </div>
+
+<div class="card">
+  <h3>Kayıtlar</h3>
+
+  <div class="search-row">
+    <input id="searchInput" placeholder="Plaka, müşteri veya araç modeli ara">
+    <button onclick="searchRecords()">Ara</button>
+  </div>
+
+  <button style="background:#334155;color:white;margin-top:8px;" onclick="loadTodayRecords()">Bugünkü Kayıtları Getir</button>
+
+  <div id="recordsList" style="margin-top:12px;"></div>
+</div>
+
+<div id="detailModal" class="modal-backdrop">
+  <div class="modal">
+    <div class="modal-head">
+      <h3 style="margin:0;">Kayıt Detayı</h3>
+      <button onclick="closeDetail()">Kapat</button>
+    </div>
+    <div id="detailContent"></div>
+  </div>
+</div>
+
 <div class="top-actions">
   <button id="saveBtn" class="save" onclick="save()">Kaydı Kaydet</button>
   <div id="saveStatus" class="status"></div>
@@ -668,11 +828,188 @@ async function uploadSignature(checklistId, canvasId, name) {
   return uploaded.url;
 }
 
+
+function parseJsonMaybe(value, fallback) {
+  if (!value) return fallback;
+  if (Array.isArray(value)) return value;
+  try {
+    return JSON.parse(value);
+  } catch (e) {
+    return fallback;
+  }
+}
+
+function shortText(value) {
+  return String(value || "-");
+}
+
+function renderRecords(records) {
+  const container = document.getElementById("recordsList");
+
+  if (!records || !records.length) {
+    container.innerHTML = '<div class="list-meta">Kayıt bulunamadı.</div>';
+    return;
+  }
+
+  container.innerHTML = records.map(r => {
+    return `
+      <div class="list-card">
+        <b>${shortText(r.Plaka)} - ${shortText(r.AracModel)}</b>
+        <div class="list-meta">
+          Tarih: ${shortText(r.TarihSaat)}<br>
+          Müşteri: ${shortText(r.MusteriAdi)}<br>
+          İş Emri: ${shortText(r.IsEmriNo)}<br>
+          Durum: ${shortText(r.Durum)}
+        </div>
+        <div class="list-actions">
+          <button onclick="openDetail('${r.ID}')">Detay Aç</button>
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+async function loadTodayRecords() {
+  const container = document.getElementById("recordsList");
+  container.innerHTML = '<div class="list-meta">Bugünkü kayıtlar yükleniyor...</div>';
+
+  try {
+    const res = await fetch(API_URL + "?action=listTodayRecords");
+    const data = await res.json();
+
+    if (!data.ok) throw new Error(data.error || "Liste alınamadı");
+
+    renderRecords(data.records || []);
+  } catch (e) {
+    container.innerHTML = '<div class="list-meta">Hata: ' + e.message + '</div>';
+  }
+}
+
+async function searchRecords() {
+  const q = document.getElementById("searchInput").value.trim();
+  const container = document.getElementById("recordsList");
+
+  if (!q) {
+    alert("Arama için plaka, müşteri veya araç modeli yaz knk.");
+    return;
+  }
+
+  container.innerHTML = '<div class="list-meta">Aranıyor...</div>';
+
+  try {
+    const res = await fetch(API_URL + "?action=searchAllRecords&q=" + encodeURIComponent(q));
+    const data = await res.json();
+
+    if (!data.ok) throw new Error(data.error || "Arama yapılamadı");
+
+    renderRecords(data.records || []);
+  } catch (e) {
+    container.innerHTML = '<div class="list-meta">Hata: ' + e.message + '</div>';
+  }
+}
+
+async function openDetail(id) {
+  const modal = document.getElementById("detailModal");
+  const content = document.getElementById("detailContent");
+
+  modal.style.display = "block";
+  content.innerHTML = '<div class="detail-section">Detay yükleniyor...</div>';
+
+  try {
+    const res = await fetch(API_URL + "?action=getRecordById&id=" + encodeURIComponent(id));
+    const data = await res.json();
+
+    if (!data.ok) throw new Error(data.error || "Detay alınamadı");
+    if (!data.record) throw new Error("Kayıt bulunamadı");
+
+    renderDetail(data.record);
+  } catch (e) {
+    content.innerHTML = '<div class="detail-section">Hata: ' + e.message + '</div>';
+  }
+}
+
+function closeDetail() {
+  document.getElementById("detailModal").style.display = "none";
+}
+
+function renderDetail(r) {
+  const content = document.getElementById("detailContent");
+
+  const checklist = parseJsonMaybe(r.ChecklistJSON, []);
+  const beforePhotos = parseJsonMaybe(r.OnceFotoPaths, []);
+  const afterPhotos = parseJsonMaybe(r.SonraFotoPaths, []);
+
+  const checklistHtml = checklist.map((x, i) => {
+    const answerClass = x.answer === "Evet" ? "answer-evet" : (x.answer === "Hayır" ? "answer-hayir" : "");
+    return `
+      <div class="detail-item">
+        <b>${i + 1}. ${x.label || x.item || "-"}</b><br>
+        Cevap: <span class="${answerClass}">${x.answer || "-"}</span><br>
+        Açıklama: ${x.note || "-"}
+      </div>
+    `;
+  }).join("");
+
+  const beforeHtml = beforePhotos.length
+    ? beforePhotos.map(url => `<img class="detail-img" src="${url}" loading="lazy">`).join("")
+    : '<div class="list-meta">Öncesi fotoğraf yok.</div>';
+
+  const afterHtml = afterPhotos.length
+    ? afterPhotos.map(url => `<img class="detail-img" src="${url}" loading="lazy">`).join("")
+    : '<div class="list-meta">Sonrası fotoğraf yok.</div>';
+
+  const techSign = r.UstaImzaPath
+    ? `<img class="detail-img" src="${r.UstaImzaPath}" loading="lazy">`
+    : '<div class="list-meta">Usta imzası yok.</div>';
+
+  const controllerSign = r.KontrolImzaPath
+    ? `<img class="detail-img" src="${r.KontrolImzaPath}" loading="lazy">`
+    : '<div class="list-meta">Kontrol eden imzası yok.</div>';
+
+  content.innerHTML = `
+    <div class="detail-section">
+      <b>${shortText(r.Plaka)} - ${shortText(r.AracModel)}</b>
+      <div class="list-meta">
+        ID: ${shortText(r.ID)}<br>
+        Tarih: ${shortText(r.TarihSaat)}<br>
+        Müşteri: ${shortText(r.MusteriAdi)}<br>
+        İş Emri: ${shortText(r.IsEmriNo)}<br>
+        Montaj Ustası: ${shortText(r.MontajUstasi)}
+      </div>
+    </div>
+
+    <div class="detail-section">
+      <h4>Kontrol Listesi</h4>
+      ${checklistHtml || '<div class="list-meta">Checklist yok.</div>'}
+    </div>
+
+    <div class="detail-section">
+      <h4>Araç Öncesi Fotoğraflar</h4>
+      <div class="detail-grid">${beforeHtml}</div>
+    </div>
+
+    <div class="detail-section">
+      <h4>Araç Sonrası Fotoğraflar</h4>
+      <div class="detail-grid">${afterHtml}</div>
+    </div>
+
+    <div class="detail-section">
+      <h4>İmzalar</h4>
+      <b>Montaj Ustası</b>
+      ${techSign}
+      <br><br>
+      <b>Kontrol Eden</b>
+      ${controllerSign}
+    </div>
+  `;
+}
+
 init();
 bindPhotoInputs();
 renderPhotos();
 setupSignaturePad("techSignature");
 setupSignaturePad("controllerSignature");
+loadTodayRecords();
 </script>
 
 </body>
