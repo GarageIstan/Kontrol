@@ -371,6 +371,7 @@ button {
   font-size: 9px;
   line-height: 1.25;
 }
+    
 
 #printArea h4 {
   margin: 4px 0;
@@ -424,6 +425,16 @@ button {
 #printArea .detail-section:last-child .detail-img {
   max-height: 90px;
   object-fit: contain;
+}
+    #printArea {
+  display: block !important;
+  visibility: visible !important;
+  background: white !important;
+  color: black !important;
+}
+
+#printArea * {
+  visibility: visible !important;
 }
 
   @page {
@@ -1377,14 +1388,27 @@ async function uploadSignature(checklistId, canvasId, name) {
 
 function printDetail() {
   const content = document.getElementById("detailContent").innerHTML;
+
+  let oldPrintArea = document.getElementById("printArea");
+  if (oldPrintArea) oldPrintArea.remove();
+
   const div = document.createElement("div");
   div.id = "printArea";
   div.innerHTML = content;
-  document.body.appendChild(div);
-  window.print();
-  div.remove();
-}
 
+  document.body.appendChild(div);
+
+  // Mobilde görsellerin ve HTML'in oturması için bekletiyoruz
+  setTimeout(() => {
+    window.print();
+
+    // Mobil print penceresi geç açıldığı için hemen silmiyoruz
+    setTimeout(() => {
+      const printArea = document.getElementById("printArea");
+      if (printArea) printArea.remove();
+    }, 3000);
+  }, 800);
+}
 async function deleteTestRecords() {
   const ok = confirm("Tüm TEST kayıtları ve bağlı Supabase dosyaları silinecek. Emin misin?");
   if (!ok) return;
