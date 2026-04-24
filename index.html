@@ -305,8 +305,9 @@ async function save() {
     saveBtn.textContent = "Kaydedildi ✅";
     saveStatus.textContent = "Kayıt başarılı. ID: " + data.record.ID;
 
-    alert("Kayıt başarılı ✅");
-resetForm();
+  resetForm();
+saveStatus.textContent = "Form temizlendi. Yeni kayıt girebilirsin.";
+alert("Kayıt başarılı ✅");
   } catch (e) {
     alert("Hata: " + e.message);
     saveStatus.textContent = "Hata: " + e.message;
@@ -325,13 +326,15 @@ function resetForm() {
   document.getElementById("brandModel").value = "";
   document.getElementById("technicianName").value = "";
 
-  Object.keys(state).forEach(key => delete state[key]);
+  Object.keys(state).forEach(key => {
+    delete state[key];
+  });
 
-  items.forEach((_, i) => {
-    document.getElementById("note-" + i).value = "";
+  init();
 
-    document.getElementById("yes-" + i).classList.remove("selected-yes");
-    document.getElementById("no-" + i).classList.remove("selected-no");
+  window.scrollTo({
+    top: 0,
+    behavior: "smooth"
   });
 }
 init();
