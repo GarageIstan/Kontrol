@@ -272,7 +272,7 @@ button {
 
 <script>
 const API_URL = "https://script.google.com/macros/s/AKfycbw2TKbY0S56gHEv4OEeu05_mwAtEg-Vibmc7Skxt1L5yVVYNgK68t5naMmxV1BiusJw2Q/exec";
-const SUPABASE_URL = "https://votjqjtkimbffugetpmx.supabase.co/rest/v1/";
+const SUPABASE_URL = "https://votjqjtkimbffugetpmx.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_1-IwVJl7wJUsnNybjKeLfA_hbTISvpj";
 
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -484,12 +484,23 @@ function resetForm() {
   document.getElementById("brandModel").value = "";
   document.getElementById("technicianName").value = "";
 
- state.answers = {};
-state.beforePhotos = [];
-state.afterPhotos = [];
-renderPhotos();
-clearSignature("techSignature");
-clearSignature("controllerSignature");
+  state.answers = {};
+  state.beforePhotos = [];
+  state.afterPhotos = [];
+
+  init();
+  renderPhotos();
+  clearSignature("techSignature");
+  clearSignature("controllerSignature");
+
+  setTimeout(() => {
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth"
+    });
+  }, 50);
+}
+
 function bindPhotoInputs() {
   document.getElementById("beforeInput").addEventListener("change", function(e) {
     addPhotos("beforePhotos", e.target.files);
@@ -504,11 +515,7 @@ function bindPhotoInputs() {
 
 function addPhotos(key, files) {
   const list = Array.from(files || []);
-
-  list.forEach(file => {
-    state[key].push(file);
-  });
-
+  list.forEach(file => state[key].push(file));
   renderPhotos();
 }
 
@@ -528,7 +535,6 @@ function renderPhotoGroup(key, containerId) {
 
   container.innerHTML = list.map((file, index) => {
     const url = URL.createObjectURL(file);
-
     return `
       <div class="preview-item">
         <img src="${url}">
@@ -567,10 +573,7 @@ function setupSignaturePad(canvasId) {
   function pos(e) {
     const rect = canvas.getBoundingClientRect();
     const p = e.touches ? e.touches[0] : e;
-    return {
-      x: p.clientX - rect.left,
-      y: p.clientY - rect.top
-    };
+    return { x: p.clientX - rect.left, y: p.clientY - rect.top };
   }
 
   function start(e) {
@@ -583,13 +586,11 @@ function setupSignaturePad(canvasId) {
   function move(e) {
     if (!drawing) return;
     e.preventDefault();
-
     const p = pos(e);
     ctx.beginPath();
     ctx.moveTo(lastX, lastY);
     ctx.lineTo(p.x, p.y);
     ctx.stroke();
-
     lastX = p.x;
     lastY = p.y;
   }
@@ -601,7 +602,6 @@ function setupSignaturePad(canvasId) {
   canvas.addEventListener("mousedown", start);
   canvas.addEventListener("mousemove", move);
   window.addEventListener("mouseup", end);
-
   canvas.addEventListener("touchstart", start, { passive: false });
   canvas.addEventListener("touchmove", move, { passive: false });
   canvas.addEventListener("touchend", end);
@@ -619,7 +619,8 @@ function canvasToBlob(canvasId) {
     canvas.toBlob(blob => resolve(blob), "image/png", 0.9);
   });
 }
-  function safeName(name) {
+
+function safeName(name) {
   return String(name || "file")
     .toLocaleLowerCase("tr-TR")
     .replaceAll("ı", "i")
@@ -635,23 +636,12 @@ function canvasToBlob(canvasId) {
 async function uploadOneFile(bucket, path, file) {
   const { error } = await supabaseClient.storage
     .from(bucket)
-    .upload(path, file, {
-      cacheControl: "3600",
-      upsert: true
-    });
+    .upload(path, file, { cacheControl: "3600", upsert: true });
 
-  if (error) {
-    throw new Error(error.message);
-  }
+  if (error) throw new Error(error.message);
 
-  const { data } = supabaseClient.storage
-    .from(bucket)
-    .getPublicUrl(path);
-
-  return {
-    path,
-    url: data.publicUrl
-  };
+  const { data } = supabaseClient.storage.from(bucket).getPublicUrl(path);
+  return { path, url: data.publicUrl };
 }
 
 async function uploadPhotoGroup(checklistId, type, files) {
@@ -661,7 +651,6 @@ async function uploadPhotoGroup(checklistId, type, files) {
     const file = files[i];
     const fileName = `${Date.now()}-${i + 1}-${safeName(file.name || "foto.jpg")}`;
     const path = `${checklistId}/${type}/${fileName}`;
-
     const uploaded = await uploadOneFile(PHOTO_BUCKET, path, file);
     paths.push(uploaded.url);
   }
@@ -672,24 +661,13 @@ async function uploadPhotoGroup(checklistId, type, files) {
 async function uploadSignature(checklistId, canvasId, name) {
   const blob = await canvasToBlob(canvasId);
 
-  if (!blob || blob.size < 1000) {
-    return "";
-  }
+  if (!blob || blob.size < 1000) return "";
 
   const path = `${checklistId}/${name}.png`;
   const uploaded = await uploadOneFile(SIGNATURE_BUCKET, path, blob);
-
   return uploaded.url;
 }
-  init();
 
-  setTimeout(() => {
-    window.scrollTo({
-      top: 0,
-      behavior: "smooth"
-    });
-  }, 50);
-}
 init();
 bindPhotoInputs();
 renderPhotos();
