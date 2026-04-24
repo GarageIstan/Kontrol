@@ -49,6 +49,20 @@ input, textarea {
   color: white;
   box-sizing: border-box;
 }
+  .fullscreen-img {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.fullscreen-img img {
+  max-width: 95%;
+  max-height: 95%;
+}
 
 textarea {
   min-height: 70px;
@@ -322,6 +336,27 @@ button {
   padding: 12px;
   margin-top: 12px;
 }
+  @media print {
+  body * {
+    visibility: hidden;
+  }
+
+  #printArea, #printArea * {
+    visibility: visible;
+  }
+
+  #printArea {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+  }
+
+  @page {
+    size: A5 portrait;
+    margin: 5mm;
+  }
+}
 
 .detail-grid {
   display: grid;
@@ -335,6 +370,7 @@ button {
   border: 1px solid #334155;
   background: #020617;
 }
+  
 
 .detail-item {
   border-bottom: 1px solid #334155;
@@ -474,7 +510,8 @@ button {
 const API_URL = "https://script.google.com/macros/s/AKfycbw2TKbY0S56gHEv4OEeu05_mwAtEg-Vibmc7Skxt1L5yVVYNgK68t5naMmxV1BiusJw2Q/exec";
 const SUPABASE_URL = "https://votjqjtkimbffugetpmx.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_1-IwVJl7wJUsnNybjKeLfA_hbTISvpj";
-
+let editMode = false;
+let editingId = null;
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 const PHOTO_BUCKET = "checklist-photos";
@@ -528,6 +565,15 @@ function init() {
     container.appendChild(div);
   });
 }
+  function openImage(url) {
+  const div = document.createElement("div");
+  div.className = "fullscreen-img";
+  div.innerHTML = `<img src="${url}">`;
+
+  div.onclick = () => div.remove();
+
+  document.body.appendChild(div);
+}
 
 function setVal(i, val) {
 state.answers[i] = val;
@@ -580,7 +626,14 @@ async function checkDuplicatePlate(plate) {
 
 async function save() {
   if (saving) return;
+// eksik kontrol
+const checklistData = getChecklist();
+const boslar = checklistData.filter(x => !x.answer).length;
 
+if (boslar > 0) {
+  const devam = confirm(`${boslar} adet cevap boş. Yine de kaydetmek istiyor musun?`);
+  if (!devam) return;
+}
   const saveBtn = document.getElementById("saveBtn");
   const saveStatus = document.getElementById("saveStatus");
 
@@ -631,7 +684,7 @@ const controllerSignaturePath = await uploadSignature(tempId, "controllerSignatu
       vehicleModel: document.getElementById("brandModel").value.trim(),
       technicianName: document.getElementById("technicianName").value.trim(),
       checklist: getChecklist(),
-      id: tempId,
+      id: editMode ? editingId : tempId,
 beforePhotoCount: beforePhotoPaths.length,
 afterPhotoCount: afterPhotoPaths.length,
 beforePhotoPaths: beforePhotoPaths,
@@ -676,6 +729,8 @@ setTimeout(() => {
       saveBtn.textContent = "Kaydı Kaydet";
     }, 1200);
   }
+  editMode = false;
+editingId = null;
 }
 
 function showPage(page) {
@@ -741,6 +796,7 @@ function renderRecords(records) {
         </div>
         <div class="list-actions">
           <button onclick="openDetail('${r.ID}')">Detay Aç</button>
+          <button style="background:#f59e0b;" onclick="editRecord('${r.ID}')">Düzenle</button>
           <button style="background:#dc2626;" onclick="deleteRecord('${r.ID}', this)">Sil</button>
         </div>
       </div>
@@ -1158,6 +1214,37 @@ async function uploadSignature(checklistId, canvasId, name) {
       btn.style.background = "#dc2626";
     }
   }
+}
+  async function editRecord(id) {
+  const res = await fetch(API_URL + "?action=getRecordById&id=" + id);
+  const data = await res.json();
+
+  if (!data.ok || !data.record) {
+    alert("Kayıt alınamadı");
+    return;
+  }
+
+  const r = data.record;
+
+  showPage("add");
+
+  editMode = true;
+  editingId = id;
+
+  document.getElementById("workOrder").value = r.IsEmriNo || "";
+  document.getElementById("plate").value = r.Plaka || "";
+  document.getElementById("customer").value = r.MusteriAdi || "";
+  document.getElementById("brandModel").value = r.AracModel || "";
+  document.getElementById("technicianName").value = r.MontajUstasi || "";
+
+  const checklist = parseJsonMaybe(r.ChecklistJSON, []);
+
+  checklist.forEach((x, i) => {
+    if (x.answer) setVal(i, x.answer);
+    document.getElementById("note-" + i).value = x.note || "";
+  });
+
+  window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
 init();
