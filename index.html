@@ -745,7 +745,7 @@ if (boslar > 0) {
   saveStatus.textContent = "Aynı plaka kontrol ediliyor...";
 
   try {
-    const duplicates = await checkDuplicatePlate(plate);let duplicates = await checkDuplicatePlate(plate);
+    let duplicates = await checkDuplicatePlate(plate);
 
 if (editMode && editingId) {
   duplicates = duplicates.filter(r => String(r.ID).trim() !== String(editingId).trim());
