@@ -203,6 +203,38 @@ button {
   }
 }
 
+.tab-bar {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: rgba(15,23,42,.96);
+  padding: 8px 0 12px;
+  margin-bottom: 8px;
+}
+
+.tab-btn {
+  background: #334155;
+  color: white;
+  border: 2px solid transparent;
+}
+
+.tab-btn.active {
+  background: #2563eb;
+  border-color: #93c5fd;
+  box-shadow: 0 0 0 3px rgba(37,99,235,.25);
+}
+
+.page {
+  display: none;
+}
+
+.page.active {
+  display: block;
+}
+
 .list-card {
   background: #111827;
   border: 1px solid #334155;
@@ -338,39 +370,6 @@ button {
   }
 }
 
-
-.tab-bar {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-  position: sticky;
-  top: 0;
-  z-index: 50;
-  background: rgba(15,23,42,.96);
-  padding: 8px 0 12px;
-  margin-bottom: 8px;
-}
-
-.tab-btn {
-  background: #334155;
-  color: white;
-  border: 2px solid transparent;
-}
-
-.tab-btn.active {
-  background: #2563eb;
-  border-color: #93c5fd;
-  box-shadow: 0 0 0 3px rgba(37,99,235,.25);
-}
-
-.page {
-  display: none;
-}
-
-.page.active {
-  display: block;
-}
-
 </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -385,81 +384,80 @@ button {
 </div>
 
 <div id="pageAdd" class="page active">
-
-<div class="card">
-  <input id="workOrder" placeholder="İş Emri No">
-  <input id="plate" placeholder="Plaka">
-  <input id="customer" placeholder="Müşteri Adı">
-  <input id="brandModel" placeholder="Araç Model">
-  <input id="technicianName" placeholder="Usta Adı">
-</div>
-<div class="card">
-  <h3>Araç Öncesi Fotoğraflar</h3>
-
-  <div class="photo-box">
-    <div class="photo-row">
-      <button class="photo-btn" onclick="document.getElementById('beforeInput').click()">+ Öncesi Foto Ekle</button>
-    </div>
-
-    <input id="beforeInput" type="file" accept="image/*" capture="environment" multiple hidden>
-    <div id="beforePreview" class="preview-grid"></div>
+  <div class="card">
+    <input id="workOrder" placeholder="İş Emri No">
+    <input id="plate" placeholder="Plaka">
+    <input id="customer" placeholder="Müşteri Adı">
+    <input id="brandModel" placeholder="Araç Model">
+    <input id="technicianName" placeholder="Usta Adı">
   </div>
-</div>
-<div class="card">
-  <h3>Kontrol Listesi</h3>
-  <div id="checklist"></div>
-</div>
-<div class="card">
-  <h3>Araç Sonrası Fotoğraflar</h3>
 
-  <div class="photo-box">
-    <div class="photo-row">
-      <button class="photo-btn" onclick="document.getElementById('afterInput').click()">+ Sonrası Foto Ekle</button>
-    </div>
-
-    <input id="afterInput" type="file" accept="image/*" capture="environment" multiple hidden>
-    <div id="afterPreview" class="preview-grid"></div>
-  </div>
-</div>
-
-<div class="card">
-  <h3>İmzalar</h3>
-
-  <div class="signature-box">
-    <b>Montaj Ustası İmza</b>
-    <canvas id="techSignature" class="signature-pad"></canvas>
-    <div class="small-btn-row">
-      <button onclick="clearSignature('techSignature')">Temizle</button>
+  <div class="card">
+    <h3>Araç Öncesi Fotoğraflar</h3>
+    <div class="photo-box">
+      <div class="photo-row">
+        <button class="photo-btn" onclick="document.getElementById('beforeInput').click()">+ Öncesi Foto Ekle</button>
+      </div>
+      <input id="beforeInput" type="file" accept="image/*" capture="environment" multiple hidden>
+      <div id="beforePreview" class="preview-grid"></div>
     </div>
   </div>
 
-  <div class="signature-box">
-    <b>Kontrol Eden İmza</b>
-    <canvas id="controllerSignature" class="signature-pad"></canvas>
-    <div class="small-btn-row">
-      <button onclick="clearSignature('controllerSignature')">Temizle</button>
+  <div class="card">
+    <h3>Kontrol Listesi</h3>
+    <div id="checklist"></div>
+  </div>
+
+  <div class="card">
+    <h3>Araç Sonrası Fotoğraflar</h3>
+    <div class="photo-box">
+      <div class="photo-row">
+        <button class="photo-btn" onclick="document.getElementById('afterInput').click()">+ Sonrası Foto Ekle</button>
+      </div>
+      <input id="afterInput" type="file" accept="image/*" capture="environment" multiple hidden>
+      <div id="afterPreview" class="preview-grid"></div>
     </div>
   </div>
-</div>
 
-<div class="top-actions">
-  <button id="saveBtn" class="save" onclick="save()">Kaydı Kaydet</button>
-  <div id="saveStatus" class="status"></div>
+  <div class="card">
+    <h3>İmzalar</h3>
+
+    <div class="signature-box">
+      <b>Montaj Ustası İmza</b>
+      <canvas id="techSignature" class="signature-pad"></canvas>
+      <div class="small-btn-row">
+        <button onclick="clearSignature('techSignature')">Temizle</button>
+      </div>
+    </div>
+
+    <div class="signature-box">
+      <b>Kontrol Eden İmza</b>
+      <canvas id="controllerSignature" class="signature-pad"></canvas>
+      <div class="small-btn-row">
+        <button onclick="clearSignature('controllerSignature')">Temizle</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="top-actions">
+    <button id="saveBtn" class="save" onclick="save()">Kaydı Kaydet</button>
+    <div id="saveStatus" class="status"></div>
+  </div>
 </div>
 
 <div id="pageList" class="page">
-<div class="card">
-  <h3>Kayıtlar</h3>
+  <div class="card">
+    <h3>Kayıtlar</h3>
 
-  <div class="search-row">
-    <input id="searchInput" placeholder="Plaka, müşteri veya araç modeli ara">
-    <button onclick="searchRecords()">Ara</button>
+    <div class="search-row">
+      <input id="searchInput" placeholder="Plaka, müşteri veya araç modeli ara">
+      <button onclick="searchRecords()">Ara</button>
+    </div>
+
+    <button style="background:#334155;color:white;margin-top:8px;" onclick="loadTodayRecords()">Bugünkü Kayıtları Getir</button>
+
+    <div id="recordsList" style="margin-top:12px;"></div>
   </div>
-
-  <button style="background:#334155;color:white;margin-top:8px;" onclick="loadTodayRecords()">Bugünkü Kayıtları Getir</button>
-
-  <div id="recordsList" style="margin-top:12px;"></div>
-</div>
 </div>
 
 <div id="detailModal" class="modal-backdrop">
@@ -471,8 +469,6 @@ button {
     <div id="detailContent"></div>
   </div>
 </div>
-
-
 
 <script>
 const API_URL = "https://script.google.com/macros/s/AKfycbw2TKbY0S56gHEv4OEeu05_mwAtEg-Vibmc7Skxt1L5yVVYNgK68t5naMmxV1BiusJw2Q/exec";
@@ -681,6 +677,195 @@ setTimeout(() => {
     }, 1200);
   }
 }
+
+function showPage(page) {
+  const isAdd = page === "add";
+
+  document.getElementById("pageAdd").classList.toggle("active", isAdd);
+  document.getElementById("pageList").classList.toggle("active", !isAdd);
+  document.getElementById("tabAdd").classList.toggle("active", isAdd);
+  document.getElementById("tabList").classList.toggle("active", !isAdd);
+
+  if (!isAdd) loadTodayRecords();
+
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function parseJsonMaybe(value, fallback) {
+  if (!value) return fallback;
+  if (Array.isArray(value)) return value;
+  try {
+    return JSON.parse(value);
+  } catch (e) {
+    return fallback;
+  }
+}
+
+function shortText(value) {
+  return String(value || "-");
+}
+
+function renderRecords(records) {
+  const container = document.getElementById("recordsList");
+
+  if (!records || !records.length) {
+    container.innerHTML = '<div class="list-meta">Kayıt bulunamadı.</div>';
+    return;
+  }
+
+  container.innerHTML = records.map(r => {
+    return `
+      <div class="list-card">
+        <b>${shortText(r.Plaka)} - ${shortText(r.AracModel)}</b>
+        <div class="list-meta">
+          Tarih: ${shortText(r.TarihSaat)}<br>
+          Müşteri: ${shortText(r.MusteriAdi)}<br>
+          İş Emri: ${shortText(r.IsEmriNo)}<br>
+          Durum: ${shortText(r.Durum)}
+        </div>
+        <div class="list-actions">
+          <button onclick="openDetail('${r.ID}')">Detay Aç</button>
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+async function loadTodayRecords() {
+  const container = document.getElementById("recordsList");
+  container.innerHTML = '<div class="list-meta">Bugünkü kayıtlar yükleniyor...</div>';
+
+  try {
+    const res = await fetch(API_URL + "?action=listTodayRecords");
+    const data = await res.json();
+
+    if (!data.ok) throw new Error(data.error || "Liste alınamadı");
+
+    renderRecords(data.records || []);
+  } catch (e) {
+    container.innerHTML = '<div class="list-meta">Hata: ' + e.message + '</div>';
+  }
+}
+
+async function searchRecords() {
+  const q = document.getElementById("searchInput").value.trim();
+  const container = document.getElementById("recordsList");
+
+  if (!q) {
+    alert("Arama için plaka, müşteri veya araç modeli yaz knk.");
+    return;
+  }
+
+  container.innerHTML = '<div class="list-meta">Aranıyor...</div>';
+
+  try {
+    const res = await fetch(API_URL + "?action=searchAllRecords&q=" + encodeURIComponent(q));
+    const data = await res.json();
+
+    if (!data.ok) throw new Error(data.error || "Arama yapılamadı");
+
+    renderRecords(data.records || []);
+  } catch (e) {
+    container.innerHTML = '<div class="list-meta">Hata: ' + e.message + '</div>';
+  }
+}
+
+async function openDetail(id) {
+  const modal = document.getElementById("detailModal");
+  const content = document.getElementById("detailContent");
+
+  modal.style.display = "block";
+  content.innerHTML = '<div class="detail-section">Detay yükleniyor...</div>';
+
+  try {
+    const res = await fetch(API_URL + "?action=getRecordById&id=" + encodeURIComponent(id));
+    const data = await res.json();
+
+    if (!data.ok) throw new Error(data.error || "Detay alınamadı");
+    if (!data.record) throw new Error("Kayıt bulunamadı");
+
+    renderDetail(data.record);
+  } catch (e) {
+    content.innerHTML = '<div class="detail-section">Hata: ' + e.message + '</div>';
+  }
+}
+
+function closeDetail() {
+  document.getElementById("detailModal").style.display = "none";
+}
+
+function renderDetail(r) {
+  const content = document.getElementById("detailContent");
+
+  const checklist = parseJsonMaybe(r.ChecklistJSON, []);
+  const beforePhotos = parseJsonMaybe(r.OnceFotoPaths, []);
+  const afterPhotos = parseJsonMaybe(r.SonraFotoPaths, []);
+
+  const checklistHtml = checklist.map((x, i) => {
+    const answerClass = x.answer === "Evet" ? "answer-evet" : (x.answer === "Hayır" ? "answer-hayir" : "");
+    return `
+      <div class="detail-item">
+        <b>${i + 1}. ${x.label || x.item || "-"}</b><br>
+        Cevap: <span class="${answerClass}">${x.answer || "-"}</span><br>
+        Açıklama: ${x.note || "-"}
+      </div>
+    `;
+  }).join("");
+
+  const beforeHtml = beforePhotos.length
+    ? beforePhotos.map(url => `<img class="detail-img" src="${url}" loading="lazy">`).join("")
+    : '<div class="list-meta">Öncesi fotoğraf yok.</div>';
+
+  const afterHtml = afterPhotos.length
+    ? afterPhotos.map(url => `<img class="detail-img" src="${url}" loading="lazy">`).join("")
+    : '<div class="list-meta">Sonrası fotoğraf yok.</div>';
+
+  const techSign = r.UstaImzaPath
+    ? `<img class="detail-img" src="${r.UstaImzaPath}" loading="lazy">`
+    : '<div class="list-meta">Usta imzası yok.</div>';
+
+  const controllerSign = r.KontrolImzaPath
+    ? `<img class="detail-img" src="${r.KontrolImzaPath}" loading="lazy">`
+    : '<div class="list-meta">Kontrol eden imzası yok.</div>';
+
+  content.innerHTML = `
+    <div class="detail-section">
+      <b>${shortText(r.Plaka)} - ${shortText(r.AracModel)}</b>
+      <div class="list-meta">
+        ID: ${shortText(r.ID)}<br>
+        Tarih: ${shortText(r.TarihSaat)}<br>
+        Müşteri: ${shortText(r.MusteriAdi)}<br>
+        İş Emri: ${shortText(r.IsEmriNo)}<br>
+        Montaj Ustası: ${shortText(r.MontajUstasi)}
+      </div>
+    </div>
+
+    <div class="detail-section">
+      <h4>Kontrol Listesi</h4>
+      ${checklistHtml || '<div class="list-meta">Checklist yok.</div>'}
+    </div>
+
+    <div class="detail-section">
+      <h4>Araç Öncesi Fotoğraflar</h4>
+      <div class="detail-grid">${beforeHtml}</div>
+    </div>
+
+    <div class="detail-section">
+      <h4>Araç Sonrası Fotoğraflar</h4>
+      <div class="detail-grid">${afterHtml}</div>
+    </div>
+
+    <div class="detail-section">
+      <h4>İmzalar</h4>
+      <b>Montaj Ustası</b>
+      ${techSign}
+      <br><br>
+      <b>Kontrol Eden</b>
+      ${controllerSign}
+    </div>
+  `;
+}
+
 function resetForm() {
   document.getElementById("workOrder").value = "";
   document.getElementById("plate").value = "";
@@ -872,205 +1057,11 @@ async function uploadSignature(checklistId, canvasId, name) {
   return uploaded.url;
 }
 
-
-
-function showPage(page) {
-  const isAdd = page === "add";
-
-  document.getElementById("pageAdd").classList.toggle("active", isAdd);
-  document.getElementById("pageList").classList.toggle("active", !isAdd);
-
-  document.getElementById("tabAdd").classList.toggle("active", isAdd);
-  document.getElementById("tabList").classList.toggle("active", !isAdd);
-
-  if (!isAdd) {
-    loadTodayRecords();
-  }
-
-  window.scrollTo({ top: 0, behavior: "smooth" });
-}
-
-function parseJsonMaybe(value, fallback) {
-  if (!value) return fallback;
-  if (Array.isArray(value)) return value;
-  try {
-    return JSON.parse(value);
-  } catch (e) {
-    return fallback;
-  }
-}
-
-function shortText(value) {
-  return String(value || "-");
-}
-
-function renderRecords(records) {
-  const container = document.getElementById("recordsList");
-
-  if (!records || !records.length) {
-    container.innerHTML = '<div class="list-meta">Kayıt bulunamadı.</div>';
-    return;
-  }
-
-  container.innerHTML = records.map(r => {
-    return `
-      <div class="list-card">
-        <b>${shortText(r.Plaka)} - ${shortText(r.AracModel)}</b>
-        <div class="list-meta">
-          Tarih: ${shortText(r.TarihSaat)}<br>
-          Müşteri: ${shortText(r.MusteriAdi)}<br>
-          İş Emri: ${shortText(r.IsEmriNo)}<br>
-          Durum: ${shortText(r.Durum)}
-        </div>
-        <div class="list-actions">
-          <button onclick="openDetail('${r.ID}')">Detay Aç</button>
-        </div>
-      </div>
-    `;
-  }).join("");
-}
-
-async function loadTodayRecords() {
-  const container = document.getElementById("recordsList");
-  container.innerHTML = '<div class="list-meta">Bugünkü kayıtlar yükleniyor...</div>';
-
-  try {
-    const res = await fetch(API_URL + "?action=listTodayRecords");
-    const data = await res.json();
-
-    if (!data.ok) throw new Error(data.error || "Liste alınamadı");
-
-    renderRecords(data.records || []);
-  } catch (e) {
-    container.innerHTML = '<div class="list-meta">Hata: ' + e.message + '</div>';
-  }
-}
-
-async function searchRecords() {
-  const q = document.getElementById("searchInput").value.trim();
-  const container = document.getElementById("recordsList");
-
-  if (!q) {
-    alert("Arama için plaka, müşteri veya araç modeli yaz knk.");
-    return;
-  }
-
-  container.innerHTML = '<div class="list-meta">Aranıyor...</div>';
-
-  try {
-    const res = await fetch(API_URL + "?action=searchAllRecords&q=" + encodeURIComponent(q));
-    const data = await res.json();
-
-    if (!data.ok) throw new Error(data.error || "Arama yapılamadı");
-
-    renderRecords(data.records || []);
-  } catch (e) {
-    container.innerHTML = '<div class="list-meta">Hata: ' + e.message + '</div>';
-  }
-}
-
-async function openDetail(id) {
-  const modal = document.getElementById("detailModal");
-  const content = document.getElementById("detailContent");
-
-  modal.style.display = "block";
-  content.innerHTML = '<div class="detail-section">Detay yükleniyor...</div>';
-
-  try {
-    const res = await fetch(API_URL + "?action=getRecordById&id=" + encodeURIComponent(id));
-    const data = await res.json();
-
-    if (!data.ok) throw new Error(data.error || "Detay alınamadı");
-    if (!data.record) throw new Error("Kayıt bulunamadı");
-
-    renderDetail(data.record);
-  } catch (e) {
-    content.innerHTML = '<div class="detail-section">Hata: ' + e.message + '</div>';
-  }
-}
-
-function closeDetail() {
-  document.getElementById("detailModal").style.display = "none";
-}
-
-function renderDetail(r) {
-  const content = document.getElementById("detailContent");
-
-  const checklist = parseJsonMaybe(r.ChecklistJSON, []);
-  const beforePhotos = parseJsonMaybe(r.OnceFotoPaths, []);
-  const afterPhotos = parseJsonMaybe(r.SonraFotoPaths, []);
-
-  const checklistHtml = checklist.map((x, i) => {
-    const answerClass = x.answer === "Evet" ? "answer-evet" : (x.answer === "Hayır" ? "answer-hayir" : "");
-    return `
-      <div class="detail-item">
-        <b>${i + 1}. ${x.label || x.item || "-"}</b><br>
-        Cevap: <span class="${answerClass}">${x.answer || "-"}</span><br>
-        Açıklama: ${x.note || "-"}
-      </div>
-    `;
-  }).join("");
-
-  const beforeHtml = beforePhotos.length
-    ? beforePhotos.map(url => `<img class="detail-img" src="${url}" loading="lazy">`).join("")
-    : '<div class="list-meta">Öncesi fotoğraf yok.</div>';
-
-  const afterHtml = afterPhotos.length
-    ? afterPhotos.map(url => `<img class="detail-img" src="${url}" loading="lazy">`).join("")
-    : '<div class="list-meta">Sonrası fotoğraf yok.</div>';
-
-  const techSign = r.UstaImzaPath
-    ? `<img class="detail-img" src="${r.UstaImzaPath}" loading="lazy">`
-    : '<div class="list-meta">Usta imzası yok.</div>';
-
-  const controllerSign = r.KontrolImzaPath
-    ? `<img class="detail-img" src="${r.KontrolImzaPath}" loading="lazy">`
-    : '<div class="list-meta">Kontrol eden imzası yok.</div>';
-
-  content.innerHTML = `
-    <div class="detail-section">
-      <b>${shortText(r.Plaka)} - ${shortText(r.AracModel)}</b>
-      <div class="list-meta">
-        ID: ${shortText(r.ID)}<br>
-        Tarih: ${shortText(r.TarihSaat)}<br>
-        Müşteri: ${shortText(r.MusteriAdi)}<br>
-        İş Emri: ${shortText(r.IsEmriNo)}<br>
-        Montaj Ustası: ${shortText(r.MontajUstasi)}
-      </div>
-    </div>
-
-    <div class="detail-section">
-      <h4>Kontrol Listesi</h4>
-      ${checklistHtml || '<div class="list-meta">Checklist yok.</div>'}
-    </div>
-
-    <div class="detail-section">
-      <h4>Araç Öncesi Fotoğraflar</h4>
-      <div class="detail-grid">${beforeHtml}</div>
-    </div>
-
-    <div class="detail-section">
-      <h4>Araç Sonrası Fotoğraflar</h4>
-      <div class="detail-grid">${afterHtml}</div>
-    </div>
-
-    <div class="detail-section">
-      <h4>İmzalar</h4>
-      <b>Montaj Ustası</b>
-      ${techSign}
-      <br><br>
-      <b>Kontrol Eden</b>
-      ${controllerSign}
-    </div>
-  `;
-}
-
 init();
 bindPhotoInputs();
 renderPhotos();
 setupSignaturePad("techSignature");
 setupSignaturePad("controllerSignature");
-loadTodayRecords();
 </script>
 
 </body>
