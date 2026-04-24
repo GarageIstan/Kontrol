@@ -307,7 +307,12 @@ async function save() {
 
   resetForm();
 saveStatus.textContent = "Form temizlendi. Yeni kayıt girebilirsin.";
-alert("Kayıt başarılı ✅");
+setTimeout(() => {
+  window.scrollTo({
+    top: 0,
+    behavior: "smooth"
+  });
+}, 100);
   } catch (e) {
     alert("Hata: " + e.message);
     saveStatus.textContent = "Hata: " + e.message;
@@ -326,16 +331,16 @@ function resetForm() {
   document.getElementById("brandModel").value = "";
   document.getElementById("technicianName").value = "";
 
-  Object.keys(state).forEach(key => {
-    delete state[key];
-  });
+  Object.keys(state).forEach(key => delete state[key]);
 
   init();
 
-  window.scrollTo({
-    top: 0,
-    behavior: "smooth"
-  });
+  setTimeout(() => {
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth"
+    });
+  }, 50);
 }
 init();
 </script>
