@@ -338,6 +338,39 @@ button {
   }
 }
 
+
+.tab-bar {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: rgba(15,23,42,.96);
+  padding: 8px 0 12px;
+  margin-bottom: 8px;
+}
+
+.tab-btn {
+  background: #334155;
+  color: white;
+  border: 2px solid transparent;
+}
+
+.tab-btn.active {
+  background: #2563eb;
+  border-color: #93c5fd;
+  box-shadow: 0 0 0 3px rgba(37,99,235,.25);
+}
+
+.page {
+  display: none;
+}
+
+.page.active {
+  display: block;
+}
+
 </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -345,6 +378,13 @@ button {
 <body>
 
 <h2>Montaj Kontrol Formu</h2>
+
+<div class="tab-bar">
+  <button id="tabAdd" class="tab-btn active" onclick="showPage('add')">Kayıt Ekle</button>
+  <button id="tabList" class="tab-btn" onclick="showPage('list')">Kayıtlar</button>
+</div>
+
+<div id="pageAdd" class="page active">
 
 <div class="card">
   <input id="workOrder" placeholder="İş Emri No">
@@ -402,6 +442,12 @@ button {
   </div>
 </div>
 
+<div class="top-actions">
+  <button id="saveBtn" class="save" onclick="save()">Kaydı Kaydet</button>
+  <div id="saveStatus" class="status"></div>
+</div>
+
+<div id="pageList" class="page">
 <div class="card">
   <h3>Kayıtlar</h3>
 
@@ -414,6 +460,7 @@ button {
 
   <div id="recordsList" style="margin-top:12px;"></div>
 </div>
+</div>
 
 <div id="detailModal" class="modal-backdrop">
   <div class="modal">
@@ -425,10 +472,7 @@ button {
   </div>
 </div>
 
-<div class="top-actions">
-  <button id="saveBtn" class="save" onclick="save()">Kaydı Kaydet</button>
-  <div id="saveStatus" class="status"></div>
-</div>
+
 
 <script>
 const API_URL = "https://script.google.com/macros/s/AKfycbw2TKbY0S56gHEv4OEeu05_mwAtEg-Vibmc7Skxt1L5yVVYNgK68t5naMmxV1BiusJw2Q/exec";
@@ -828,6 +872,23 @@ async function uploadSignature(checklistId, canvasId, name) {
   return uploaded.url;
 }
 
+
+
+function showPage(page) {
+  const isAdd = page === "add";
+
+  document.getElementById("pageAdd").classList.toggle("active", isAdd);
+  document.getElementById("pageList").classList.toggle("active", !isAdd);
+
+  document.getElementById("tabAdd").classList.toggle("active", isAdd);
+  document.getElementById("tabList").classList.toggle("active", !isAdd);
+
+  if (!isAdd) {
+    loadTodayRecords();
+  }
+
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
 
 function parseJsonMaybe(value, fallback) {
   if (!value) return fallback;
